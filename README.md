@@ -20,6 +20,10 @@ Ein Endless-Hopper im Neon-Cyberpunk-Look fürs iPhone. Du bist Kurier eines Syn
 | Blackout | Stadt dunkel, nur Lichtkreis und Scheinwerfer; keine Drohnen, Heat kühlt doppelt |
 | Rush Hour | Verkehr 45 % schneller, Beute zählt doppelt |
 | Razzia | Heat +2 und Drohnenstaffel; wer überlebt, bekommt Bonus |
+| ⬡ EMP-Schild | fängt einen Treffer ab, holt Drohnen in der Nähe runter |
+| ⬡ Zeitlupe | 4 s lang läuft alles außer dir in 40 % Tempo |
+| ⬡ Tarnmodus | 6 s unsichtbar für Drohnen, Heat eingefroren |
+| ⬡ Magnet | 8 s lang wird Beute von den Nachbarfeldern angezogen |
 
 ## Aufbau
 
