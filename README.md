@@ -30,10 +30,15 @@ Ein Endless-Hopper im Neon-Cyberpunk-Look fürs iPhone. Du bist Kurier eines Syn
 | Blackout | Stadt dunkel, nur Lichtkreis und Scheinwerfer; keine Drohnen, Heat kühlt doppelt |
 | Rush Hour | Verkehr 45 % schneller, Beute zählt doppelt |
 | Razzia | Heat +2 und Drohnenstaffel; wer überlebt, bekommt Bonus |
+| Bezirks-Events | jeder Bezirk hat sein eigenes Event: Ampel-Hack (Sektor 7), Hafennebel (Hafen 9), Goldrausch (Neon-Basar), Express-Takt (Kuppelstadt), Schwerlast-Konvoi (Untergrund) |
 | ⬡ EMP-Schild | fängt einen Treffer ab, holt Drohnen in der Nähe runter |
 | ⬡ Zeitlupe | 4 s lang läuft alles außer dir in 40 % Tempo |
 | ⬡ Tarnmodus | 6 s unsichtbar für Drohnen, Heat eingefroren |
 | ⬡ Magnet | 8 s lang wird Beute von den Nachbarfeldern angezogen |
+
+## Cosmic Neon-Trip
+
+Eigener Modus, freigeschaltet ab Rang **Runner**: Verkehr 1,6× so schnell, Punkte doppelt, Musik mit 140 statt 112 BPM. Springst du genau auf den Bass, gibt es **Beat-Bonus** und die Combo hält länger – ein schrumpfender Ring um deine Figur zeigt den Takt. Alle 25 Reihen wird es eine Stufe intensiver (bis Stufe VI). Effekte: Farbrausch, Lichtschweife, Beat-Puls, Warp-Streifen. Im Menü lassen sich die Effekte reduzieren („Trip-Effekte“); bei „Bewegung reduzieren“ am Gerät sind sie von Anfang an aus. Eigene Bestenliste.
 
 ## Daily Run und Missionen
 

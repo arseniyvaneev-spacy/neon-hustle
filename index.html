@@ -91,6 +91,17 @@
   .btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
   .btn:active { transform: scale(.97); }
   .note { color: var(--dim); font-size: 14px; }
+  .btn.trip {
+    min-width: 240px; border-color: transparent; color: #fff;
+    background: linear-gradient(rgb(13 2 33 / .85), rgb(13 2 33 / .85)) padding-box,
+                linear-gradient(90deg, var(--magenta), var(--violet), var(--cyan), #3dff88, var(--magenta)) border-box;
+    background-size: 100% 100%, 300% 100%; animation: tripBorder 4s linear infinite;
+    box-shadow: 0 0 18px rgb(166 77 255 / .6);
+  }
+  .btn.trip:disabled { animation: none; opacity: .5; cursor: default; }
+  @keyframes tripBorder { to { background-position: 0 0, 300% 0; } }
+  @media (prefers-reduced-motion: reduce) { .btn.trip { animation: none; } }
+  .btn.small { font-size: 11px; min-height: 40px; padding: 8px 14px; box-shadow: none; border-color: rgb(166 77 255 / .45); }
   .install { font-size: 14px; color: var(--ink); padding: 8px 12px; border-radius: 10px; border: 1px dashed var(--cyan); background: rgb(5 217 232 / .08); }
   .install b { color: var(--cyan); }
   .rank { font: 600 12px var(--display); letter-spacing: .2em; text-transform: uppercase; color: var(--cyan); text-shadow: 0 0 8px rgb(5 217 232 / .6); }
@@ -105,39 +116,45 @@
   .m.done { border-color: var(--cyan); box-shadow: 0 0 10px rgb(5 217 232 / .35); }
   .m.done b { color: var(--cyan); }
   .m.done i u { background: var(--cyan); }
-  .sec { display: grid; gap: 8px; width: 100%; text-align: left; }
-  .sec h2 { margin: 4px 0 0; font: 700 12px var(--display); letter-spacing: .22em; text-transform: uppercase; color: var(--dim); }
-  .chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 8px; }
-  .chip {
-    display: grid; gap: 4px; min-height: 44px; padding: 8px 10px; border-radius: 10px; cursor: pointer; text-align: left;
-    border: 1px solid rgb(166 77 255 / .35); background: rgb(13 2 33 / .6); color: var(--ink); font: 600 14px var(--body);
-  }
-  .chip small { color: var(--dim); font-size: 12px; font-weight: 500; }
-  .chip .sw { display: flex; gap: 3px; }
-  .chip .sw i { width: 14px; height: 6px; border-radius: 2px; }
-  .chip.on { border-color: var(--cyan); box-shadow: 0 0 10px rgb(5 217 232 / .4); }
-  .chip:disabled { opacity: .4; cursor: default; }
-  .chip:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
-  .tabs { display: flex; gap: 8px; }
-  .tabs .chip { text-align: center; min-width: 110px; font: 700 13px var(--display); letter-spacing: .12em; text-transform: uppercase; }
-  .board-list { list-style: none; margin: 0; padding: 0; width: 100%; display: grid; gap: 6px; }
-  .board-list li {
-    display: grid; grid-template-columns: 2.2em 1fr auto; gap: 2px 10px; align-items: baseline; text-align: left;
-    padding: 8px 12px; border-radius: 10px; border: 1px solid rgb(166 77 255 / .3); background: rgb(13 2 33 / .6);
-  }
-  .board-list li.top { border-color: var(--gold); }
-  .board-list .pl { font: 900 15px var(--display); color: var(--dim); }
-  .board-list li.top .pl { color: var(--gold); }
-  .board-list .sc { font: 900 18px var(--display); color: var(--ink); font-variant-numeric: tabular-nums; }
-  .board-list .dt { color: var(--dim); font-size: 13px; text-align: right; }
-  .board-list .ds { grid-column: 2 / -1; color: var(--dim); font-size: 13px; }
-  .board-list .empty { display: block; color: var(--dim); text-align: center; }
   .howto { width: 100%; text-align: left; color: var(--dim); }
   .howto summary { cursor: pointer; text-align: center; font: 600 13px var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--ink); padding: 6px; }
   .howto p { margin: 8px 0; max-width: none; }
   .share { display: grid; gap: 8px; justify-items: center; width: 100%; }
   .share pre { box-sizing: border-box; margin: 0; width: 100%; white-space: pre-wrap; text-align: left; font: 500 14px/1.4 var(--body); color: var(--ink);
     padding: 10px 12px; border-radius: 10px; border: 1px dashed var(--cyan); background: rgb(13 2 33 / .6); user-select: text; -webkit-user-select: text; }
+  .leaderboard-open { min-width: 180px; }
+  .leaderboard-panel { gap: 10px; }
+  .leaderboard-list { display: grid; gap: 6px; width: 100%; text-align: left; }
+  .leaderboard-list h2 { margin: 4px 0 2px; font: 700 12px var(--display); letter-spacing: .22em; text-transform: uppercase; color: var(--dim); }
+  .leaderboard-row { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: center; gap: 8px; padding: 7px 10px;
+    border: 1px solid rgb(166 77 255 / .35); border-radius: 10px; background: rgb(13 2 33 / .6); font-variant-numeric: tabular-nums; }
+  .leaderboard-rank { color: var(--violet); font: 700 12px var(--display); }
+  .leaderboard-entry-details { display: grid; min-width: 0; }
+  .leaderboard-entry-details strong { color: var(--ink); font: 700 15px var(--display); }
+  .leaderboard-entry-details span { color: var(--dim); font-size: 14px; }
+  .leaderboard-empty { padding: 10px 12px; border: 1px solid rgb(166 77 255 / .25); border-radius: 10px; color: var(--dim); background: rgb(13 2 33 / .45); }
+  .wardrobe-panel { gap: 10px; }
+  .outfit-preview { display: grid; justify-items: center; gap: 3px; width: 100%; padding: 8px; border: 1px solid rgb(5 217 232 / .3); border-radius: 12px; background: rgb(13 2 33 / .55); }
+  #outfitPreview { width: 112px; height: 112px; }
+  #outfitName { color: var(--ink); font: 700 16px var(--display); }
+  #outfitStatus { color: var(--dim); font-size: 14px; }
+  .outfit-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+  .outfit-choice { display: grid; gap: 4px; min-height: 62px; padding: 9px; text-align: left; color: var(--ink); border: 1px solid rgb(166 77 255 / .35); border-radius: 10px; background: rgb(13 2 33 / .6); cursor: pointer; }
+  .outfit-choice.selected { border-color: var(--cyan); box-shadow: 0 0 10px rgb(5 217 232 / .35); }
+  .outfit-choice strong { font: 700 12px var(--display); }
+  .outfit-choice span { color: var(--dim); font: 500 14px var(--body); }
+  .outfit-choice:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+  #outfitEquipBtn:disabled { opacity: .55; cursor: default; }
+  .district-panel { gap: 10px; }
+  #districtPreview { width: 224px; height: 96px; border-radius: 8px; border: 1px solid rgb(166 77 255 / .3); }
+  .district-options { display: grid; gap: 8px; width: 100%; }
+  .district-choice { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 10px 12px; text-align: left; color: var(--ink);
+    border: 1px solid rgb(166 77 255 / .35); border-radius: 10px; background: rgb(13 2 33 / .6); cursor: pointer; }
+  .district-choice.selected { border-color: var(--cyan); box-shadow: 0 0 10px rgb(5 217 232 / .35); }
+  .district-choice strong { font: 700 13px var(--display); }
+  .district-choice span { color: var(--dim); font: 500 14px var(--body); }
+  .district-choice:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+  #districtChooseBtn:disabled { opacity: .55; cursor: default; }
   .overlay .big { color: var(--ink); font: 600 16px var(--display); letter-spacing: .14em; text-transform: uppercase;
     animation: pulse 1.4s ease-in-out infinite; }
   .tag { color: var(--magenta); font: 600 12px var(--display); letter-spacing: .3em; text-transform: uppercase;
@@ -237,23 +254,26 @@
 
 <div class="overlay" id="start">
   <div class="panel">
-    <div class="tag" id="tagStart">Syndikat-Kurier · Sektor 7</div>
+    <div class="tag" id="startTag">Syndikat-Kurier · Sektor 7</div>
     <h1>NEON HUSTLE</h1>
     <div class="rank" id="rankStart"></div>
     <div class="btns">
       <button id="playBtn" class="btn primary" type="button">Spielen</button>
       <button id="dailyBtn" class="btn" type="button">Daily Run</button>
-      <button id="boardBtn" class="btn" type="button">Bestenliste</button>
     </div>
+    <button id="tripBtn" class="btn trip" type="button">Cosmic Neon-Trip</button>
+    <button id="fxBtn" class="btn small" type="button">Trip-Effekte: voll</button>
     <div class="note" id="dailyInfo"></div>
+    <button id="leaderboardBtn" class="btn leaderboard-open" type="button">Bestenliste</button>
+    <button id="wardrobeBtn" class="btn" type="button">Garderobe</button>
+    <button id="districtBtn" class="btn" type="button">Bezirke</button>
     <div class="install" id="installHint" hidden>Als App spielen: in Safari auf <b>Teilen</b> tippen, dann <b>„Zum Home-Bildschirm“</b>.</div>
     <div class="missions" id="missionsStart"></div>
-    <div class="sec"><h2>Bezirk</h2><div class="chips" id="districtChips"></div></div>
-    <div class="sec"><h2>Garderobe</h2><div class="chips" id="outfitChips"></div></div>
     <details class="howto">
       <summary>Wie spielt man?</summary>
       <p><b>Tippen</b> = vorwärts · <b>Wischen</b> = links, rechts, zurück</p>
       <p>Am Rechner: Pfeiltasten · M = Ton</p>
+      <p><b>Cosmic Neon-Trip</b> (ab Rang Runner): alles schneller, Punkte doppelt. Springst du genau auf den Bass, gibt es <b>Beat-Bonus</b> – der schrumpfende Ring um dich zeigt den Takt.</p>
       <p><b>Magnetbahn</b>: blinkt das Gleis rot, kommt gleich ein Zug. <b>Laser</b>: flackert er, schaltet er gleich ein; freie Spalten sind cyan markiert.</p>
       <p><b>⬡ Power-ups</b>: Schild, Zeitlupe, Tarnmodus, Magnet.</p>
       <p><b>Datenkanal</b>: auf die leuchtenden Pads springen, nicht in den Strom. <b>Safehouse</b>: hier kühlt Heat schnell ab, Drohnen kommen nicht rein.</p>
@@ -262,16 +282,43 @@
     </details>
   </div>
 </div>
-<div class="overlay" id="board" hidden>
-  <div class="panel">
-    <div class="tag">Bestenliste</div>
-    <div class="tabs" role="tablist">
-      <button class="chip tab on" type="button" data-kind="normal" role="tab">Standard</button>
-      <button class="chip tab" type="button" data-kind="daily" role="tab">Daily</button>
+<div class="overlay" id="leaderboard" hidden>
+  <div class="panel leaderboard-panel">
+    <div class="tag">Syndikat-Archiv</div>
+    <h1>BESTENLISTE</h1>
+    <div class="leaderboard-list" id="normalLeaderboard"></div>
+    <div class="leaderboard-list" id="dailyLeaderboard"></div>
+    <div class="leaderboard-list" id="tripLeaderboard"></div>
+    <button id="leaderboardBackBtn" class="btn" type="button">Zurück</button>
+  </div>
+</div>
+<div class="overlay" id="wardrobe" hidden>
+  <div class="panel wardrobe-panel">
+    <div class="tag">Syndikat-Garderobe</div>
+    <h1>OUTFITS</h1>
+    <div class="outfit-preview">
+      <canvas id="outfitPreview" aria-label="Vorschau des Kurier-Outfits"></canvas>
+      <strong id="outfitName"></strong>
+      <span id="outfitStatus"></span>
     </div>
-    <ol class="board-list" id="boardList"></ol>
-    <div class="note">Die zehn besten Läufe, gespeichert nur auf diesem Gerät.</div>
-    <button id="boardBack" class="btn" type="button">Zurück</button>
+    <div class="outfit-options" id="outfitOptions"></div>
+    <button id="outfitEquipBtn" class="btn primary" type="button">Outfit anlegen</button>
+    <button id="wardrobeBackBtn" class="btn" type="button">Zurück</button>
+  </div>
+</div>
+<div class="overlay" id="districts" hidden>
+  <div class="panel district-panel">
+    <div class="tag">Stadtkarte</div>
+    <h1>BEZIRKE</h1>
+    <div class="outfit-preview">
+      <canvas id="districtPreview" aria-label="Vorschau der Bezirk-Palette"></canvas>
+      <strong id="districtName"></strong>
+      <span id="districtStatus"></span>
+    </div>
+    <div class="district-options" id="districtOptions"></div>
+    <p class="note">Daily Runs laufen der Fairness halber immer in Sektor 7.</p>
+    <button id="districtChooseBtn" class="btn primary" type="button">Bezirk wählen</button>
+    <button id="districtBackBtn" class="btn" type="button">Zurück</button>
   </div>
 </div>
 <div class="overlay" id="over" hidden>
@@ -300,7 +347,9 @@
     let ac = null, master, sfx, music, musicLP, bassFilter, noiseBuf, timer = null;
     let step = 0, nextT = 0, intensity = 0, muted = false;
     try { muted = localStorage.getItem('nh-mute') === '1'; } catch (e) {}
-    const BPM = 112, STEP = 60 / BPM / 4;                    // Sechzehntel
+    let BPM = 112, STEP = 60 / BPM / 4, transpose = 0;       // Sechzehntel; im Trip schneller und höher
+    const kicks = [];                                         // Zeitpunkte der letzten/nächsten Bass-Schläge
+    const clockSeen = { ac: -1, perf: 0 };
     const ROOTS = [33, 29, 36, 31];                          // A, F, C, G (MIDI)
     const CHORDS = [[0, 3, 7], [0, 4, 7], [0, 4, 7], [0, 4, 7]];
     const BASS = [0, 0, 12, 0, 0, 12, 0, 12, 0, 0, 12, 0, 0, 12, 7, 12];
@@ -345,8 +394,8 @@
     function schedule() {
       if (ac.state !== 'running') return;
       while (nextT < ac.currentTime + .12) {
-        const s16 = step % 16, bar = Math.floor(step / 16) % 4, root = ROOTS[bar];
-        if (s16 % 4 === 0) tone('sine', 150, 42, .22, .9, nextT, music);
+        const s16 = step % 16, bar = Math.floor(step / 16) % 4, root = ROOTS[bar] + transpose;
+        if (s16 % 4 === 0) { tone('sine', 150, 42, .22, .9, nextT, music); kicks.push(nextT); if (kicks.length > 8) kicks.shift(); }
         if (s16 === 4 || s16 === 12) noise(.14, .5, 1800, 900, nextT, music);
         if (intensity >= 1 && s16 % 2 === 1) noise(.035, .25, 9000, 0, nextT, music, 'highpass');
         bassFilter.frequency.setTargetAtTime(450 + intensity * 260, nextT, .3);
@@ -361,6 +410,21 @@
     return {
       init,
       setIntensity(l) { intensity = l; },
+      setTempo(bpm, tr) { BPM = bpm; STEP = 60 / BPM / 4; transpose = tr || 0; },
+      // Abstand zum letzten und zum nächsten Bass-Schlag in Sekunden (ohne Ton: eigene Uhr im selben Takt)
+      beat() {
+        const period = 60 / BPM;
+        // Steht die Audio-Uhr still (kein Ton möglich, Gerät pausiert), läuft der Takt über die normale Uhr weiter
+        const perf = performance.now() / 1000;
+        if (ac && ac.currentTime !== clockSeen.ac) { clockSeen.ac = ac.currentTime; clockSeen.perf = perf; }
+        const stalled = !ac || ac.state !== 'running' || perf - clockSeen.perf > .25;
+        if (stalled) { const t = perf % period; return { since: t, to: period - t, period }; }
+        const now = ac.currentTime; let last = -Infinity, next = Infinity;
+        for (const k of kicks) { if (k <= now && k > last) last = k; if (k > now && k < next) next = k; }
+        if (last === -Infinity) last = next - period;
+        if (next === Infinity) next = last + period;
+        return { since: now - last, to: next - now, period };
+      },
       pause(on) { if (ac) on ? ac.suspend() : ac.resume(); },
       muffle(on) { if (ac) musicLP.frequency.setTargetAtTime(on ? 420 : 18000, ac.currentTime, .25); },
       sting(type) {
@@ -369,6 +433,9 @@
         if (type === 'blackout') { tone('sawtooth', 420, 30, 1.1, .3); noise(.9, .3, 2000, 80, 0, sfx, 'lowpass'); }
         if (type === 'rush') { [0, .22].forEach(d => { tone('square', 392, 0, .18, .12, t0 + d); tone('square', 494, 0, .18, .1, t0 + d); }); }
         if (type === 'razzia') { for (let k = 0; k < 3; k++) { tone('sawtooth', 600, 1100, .25, .1, t0 + k * .5); tone('sawtooth', 1100, 600, .25, .1, t0 + k * .5 + .25); } }
+        if (type === 'ampel') { [0, .18, .36].forEach(d => tone('square', 660, 0, .1, .1, t0 + d)); }
+        if (type === 'nebel') { tone('sine', 110, 70, 1.4, .3); noise(1.2, .25, 600, 200, 0, sfx, 'lowpass'); }
+        if (type === 'gold' || type === 'express' || type === 'konvoi') { [0, 5, 9, 12].forEach((n, k) => tone(type === 'konvoi' ? 'sawtooth' : 'triangle', hz((type === 'konvoi' ? 48 : 76) + n), 0, .16, .12, t0 + k * .08)); }
         if (type === 'win') { [0, 4, 7, 12, 16].forEach((n, k) => tone('triangle', hz(72 + n), 0, .14, .14, t0 + k * .06)); }
       },
       duck(on) { if (ac) music.gain.setTargetAtTime(on ? .06 : .22, ac.currentTime, .15); },
@@ -400,20 +467,52 @@
   const COLS = 9;
   const COMBO_WINDOW = 1.1;   // Sekunden bis die Combo verfällt
   const HOP_MS = 75;          // Dauer eines Hüpfers in ms (kleiner = flinker)
+  // ---------- Cosmic Neon-Trip ----------
+  // Eigener Modus: schneller, Punkte doppelt, Beat-Sprung-Bonus, alle TRIP.stageRows Reihen eine Stufe intensiver.
+  const TRIP = {
+    rank: 2,              // freigeschaltet ab Rang „Runner“ (Index in RANKS)
+    speed: 1.6,           // Verkehrstempo am Anfang
+    speedPerStage: .08,   // plus pro Stufe
+    points: 2,            // Punkte-Faktor
+    bpm: 140,             // Musik-Tempo (normal 112)
+    beatWindow: .12,      // so viele Sekunden vor/nach dem Bass zählt ein Sprung als „auf den Beat“
+    beatBonus: 2,         // Bonuspunkte pro Beat-Sprung (× Multiplikator × Punkte-Faktor)
+    beatCombo: .4,        // so viel länger hält die Combo nach einem Beat-Sprung
+    stageRows: 25,        // alle so viele Reihen: nächste Stufe
+    maxStage: 6
+  };
+  const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI'];
+  // Faire Treffer: nur die Mitte deines Feldes zählt, Fahrzeuge sind an den Enden etwas „weicher“
+  const HIT_PAD = .26;        // so viel vom Feldrand links/rechts zählt NICHT als Treffer (0–0,5)
+  const CAR_SHRINK = .1;      // Fahrzeuge zählen an jedem Ende so viel kürzer, als sie aussehen
+  const PAD_GRACE = .15;      // Datenkanal: so weit darfst du neben einem Pad landen und trotzdem stehen
+  const DRONE_WARN = 1.2;     // Sekunden Vorwarnung, bevor eine Drohne durch die Reihe fliegt
+  // Verkehr (kleiner = leichter)
+  const TRAFFIC_SPEED = .85;  // Grundtempo aller Fahrzeuge
+  const TRAFFIC_DENSITY = .93; // wie oft eine Reihe zur Straße wird
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   const css = getComputedStyle(document.documentElement);
   const C = n => css.getPropertyValue('--' + n).trim();
   const P = { night: C('night'), alley: C('alley'), asphalt: C('asphalt'), magenta: C('magenta'),
               cyan: C('cyan'), violet: C('violet'), blue: C('blue'), gold: C('gold'), ink: C('ink') };
+  let CAR_COLORS = [P.magenta, P.cyan, P.blue];
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   let W, H, cell, dpr;
+  // Zweite, unsichtbare Leinwand für die Lichtschweife im Trip (nur Fahrzeuge und Figur)
+  const trail = document.createElement('canvas'), tctx = trail.getContext('2d');
+  let tripStage = 1, hue = 0, beatPulse = 0, warp = [];
+  let fxLow = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  try { const v = localStorage.getItem('nh-fx-low'); if (v !== null) fxLow = v === '1'; } catch (e) {}
+  const tripFx = () => mode === 'trip' && !fxLow && state !== 'menu';
+  const scoreMul = () => mode === 'trip' ? TRIP.points : 1;
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2); // 2x reicht, spart viel Rechenzeit
     W = canvas.clientWidth; H = canvas.clientHeight;
     canvas.width = W * dpr; canvas.height = H * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    trail.width = canvas.width; trail.height = canvas.height; tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     cell = W / COLS;
     sprites.clear();
   }
@@ -437,9 +536,9 @@
     g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
   }
 
-  function carSprite(wCells, color, dir, truck) {
+  function carSprite(wCells, color, dir, truck, style) {
     const w = Math.round(wCells * cell) - 4, h = Math.round(cell * 0.62);
-    return sprite(`car|${w}|${color}|${dir}|${truck}`, w, h, cell * 0.35, (g, w, h) => {
+    return sprite(`car|${w}|${color}|${dir}|${truck}|${style}`, w, h, cell * 0.35, (g, w, h) => {
       // Alles wird nach rechts fahrend gezeichnet und bei Bedarf gespiegelt
       if (dir < 0) { g.translate(w, 0); g.scale(-1, 1); }
       // Unterboden-Glow (Hover)
@@ -465,40 +564,51 @@
         g.shadowColor = '#ff2a4d'; g.fillStyle = '#ff2a4d';
         g.fillRect(0, h * .1, 2, h * .8);
       } else {
-        // E-Limousine: flache, lange Form, Glasdach, durchgehende Lichtleisten
-        g.shadowBlur = cell * .15; g.strokeStyle = color; g.lineWidth = 2;
-        g.fillStyle = '#0b0320';
-        g.beginPath();
-        g.moveTo(w * .06, h * .1);
-        g.quadraticCurveTo(w * .5, -h * .04, w * .9, h * .1);   // Seite oben
-        g.quadraticCurveTo(w * 1.01, h * .5, w * .9, h * .9);   // runde Front
-        g.quadraticCurveTo(w * .5, h * 1.04, w * .06, h * .9);  // Seite unten
-        g.quadraticCurveTo(-w * .01, h * .5, w * .06, h * .1);  // Heck
-        g.closePath(); g.fill(); g.stroke();
-        g.shadowBlur = 0;
-        // Panorama-Glasdach
-        const roof = g.createLinearGradient(w * .25, 0, w * .75, 0);
-        roof.addColorStop(0, 'rgba(255,255,255,.05)'); roof.addColorStop(.6, color); roof.addColorStop(1, 'rgba(255,255,255,.15)');
-        g.fillStyle = roof; g.globalAlpha = .45;
-        rr(g, w * .26, h * .2, w * .46, h * .6, h * .22); g.fill();
-        g.globalAlpha = 1;
-        // Lichtleisten vorne (weiß) und hinten (rot), über die ganze Breite
-        g.shadowColor = '#e9f6ff'; g.shadowBlur = cell * .2; g.fillStyle = '#e9f6ff';
-        rr(g, w * .9, h * .2, 2.5, h * .6, 1.2); g.fill();
-        g.shadowColor = '#ff2a4d'; g.fillStyle = '#ff2a4d';
-        rr(g, w * .035, h * .18, 2.5, h * .64, 1.2); g.fill();
+        // Autos: gefüllte Karosserie in Bezirksfarbe, dunkle Scheiben, Räder – von oben klar als Auto lesbar
+        g.shadowBlur = 0; g.fillStyle = '#3a3450';                       // Räder (heller als der Asphalt, damit man sie sieht)
+        for (const wx of [w * .15, w * .68]) {
+          rr(g, wx, -h * .07, w * .16, h * .22, 2); g.fill();
+          rr(g, wx, h * .85, w * .16, h * .22, 2); g.fill();
+        }
+        g.shadowColor = color; g.shadowBlur = cell * .12; g.fillStyle = color;
+        g.strokeStyle = 'rgba(0, 0, 0, .55)'; g.lineWidth = 1.5;
+        if (style === 'classic') {
+          // Klassiker: kantige Karosserie, lange Motorhaube, Chrom-Stoßstangen, runde Scheinwerfer
+          rr(g, w * .04, h * .06, w * .92, h * .88, h * .14); g.fill(); g.stroke();
+          g.shadowBlur = 0;
+          g.fillStyle = 'rgba(255, 255, 255, .25)'; g.fillRect(w * .66, h * .49, w * .26, 1.5);   // Motorhauben-Falz
+          g.fillStyle = '#0b0320';
+          g.beginPath(); g.moveTo(w * .5, h * .2); g.lineTo(w * .62, h * .27); g.lineTo(w * .62, h * .73); g.lineTo(w * .5, h * .8); g.closePath(); g.fill();   // Frontscheibe
+          g.beginPath(); g.moveTo(w * .22, h * .27); g.lineTo(w * .32, h * .2); g.lineTo(w * .32, h * .8); g.lineTo(w * .22, h * .73); g.closePath(); g.fill(); // Heckscheibe
+          g.fillStyle = 'rgba(255, 255, 255, .16)'; rr(g, w * .33, h * .22, w * .16, h * .56, 3); g.fill();   // Dach
+          g.fillStyle = '#dfe2f3'; g.fillRect(w * .95, h * .12, w * .035, h * .76); g.fillRect(w * .015, h * .12, w * .035, h * .76); // Chrom
+          g.shadowColor = '#fff2b3'; g.shadowBlur = cell * .2; g.fillStyle = '#fff2b3';
+          for (const y of [h * .25, h * .75]) { g.beginPath(); g.arc(w * .9, y, h * .085, 0, Math.PI * 2); g.fill(); }
+          g.shadowColor = '#ff2a4d'; g.fillStyle = '#ff2a4d';
+          g.fillRect(w * .06, h * .14, 3, h * .14); g.fillRect(w * .06, h * .72, 3, h * .14);
+        } else {
+          // Modern: stromlinienförmig, durchgehendes Glasdach, Lichtleisten vorne und hinten
+          rr(g, w * .03, h * .08, w * .94, h * .84, h * .38); g.fill(); g.stroke();
+          g.shadowBlur = 0;
+          g.fillStyle = '#0b0320'; rr(g, w * .28, h * .18, w * .44, h * .64, h * .2); g.fill();          // Glasdach
+          g.fillStyle = 'rgba(255, 255, 255, .25)'; rr(g, w * .6, h * .24, w * .08, h * .52, 3); g.fill(); // Spiegelung
+          g.shadowColor = '#e9f6ff'; g.shadowBlur = cell * .2; g.fillStyle = '#e9f6ff';
+          rr(g, w * .91, h * .2, 2.5, h * .6, 1.2); g.fill();
+          g.shadowColor = '#ff2a4d'; g.fillStyle = '#ff2a4d';
+          rr(g, w * .045, h * .2, 2.5, h * .6, 1.2); g.fill();
+        }
       }
     });
   }
 
-  function playerSprite(dead) {
+  function playerSprite(dead, outfitId = selectedOutfit) {
+    const outfit = outfitFor(outfitId);
     const s = Math.round(cell * 0.6);
-    const O = outfit();
-    return sprite(`player|${s}|${dead}|${O.id}`, s, s, cell * 0.3, (g, w, h) => {
-      const rim = dead ? '#ff3b3b' : O.rim;
-      // Hoodie
+    return sprite(`player|${s}|${dead}|${outfit.id}`, s, s, cell * 0.3, (g, w, h) => {
+      const rim = dead ? '#ff3b3b' : outfit.rim;
+      // Hoodie – Outfits ändern nur die Farben, sie bleiben rein kosmetisch
       g.shadowColor = rim; g.shadowBlur = cell * .22;
-      g.fillStyle = O.body; g.strokeStyle = rim; g.lineWidth = 2.2;
+      g.fillStyle = outfit.hoodie; g.strokeStyle = rim; g.lineWidth = 2.2;
       g.beginPath();
       g.moveTo(w * .5, 0);
       g.quadraticCurveTo(w, 0, w, h * .45); g.lineTo(w, h * .82);
@@ -507,12 +617,12 @@
       g.quadraticCurveTo(0, 0, w * .5, 0); g.closePath();
       g.fill(); g.stroke();
       // LED-Visier
-      g.shadowColor = O.visor; g.shadowBlur = cell * .2; g.fillStyle = dead ? '#ff3b3b' : O.visor;
+      g.shadowColor = outfit.visor; g.shadowBlur = cell * .2; g.fillStyle = dead ? '#ff3b3b' : outfit.visor;
       rr(g, w * .16, h * .32, w * .68, h * .16, h * .08); g.fill();
       // Goldkette
-      g.shadowColor = O.chain; g.shadowBlur = cell * .12; g.strokeStyle = O.chain; g.lineWidth = 2;
+      g.shadowColor = P.gold; g.shadowBlur = cell * .12; g.strokeStyle = P.gold; g.lineWidth = 2;
       g.beginPath(); g.arc(w * .5, h * .62, w * .2, 0.15 * Math.PI, 0.85 * Math.PI); g.stroke();
-      g.fillStyle = O.chain; g.beginPath(); g.arc(w * .5, h * .83, w * .06, 0, Math.PI * 2); g.fill();
+      g.fillStyle = P.gold; g.beginPath(); g.arc(w * .5, h * .83, w * .06, 0, Math.PI * 2); g.fill();
     });
   }
 
@@ -633,10 +743,17 @@
   const EVENTS = {
     blackout: { title: 'BLACKOUT', sub: 'Stromausfall: Drohnen sehen dich nicht, Heat kühlt ab', dur: 10, color: '#3d5afe' },
     rush:     { title: 'RUSH HOUR', sub: 'Verkehr gibt Gas: Beute zählt doppelt', dur: 12, color: '#ff2a6d' },
-    razzia:   { title: 'RAZZIA', sub: 'Heat +2, Drohnenstaffel: überleben = Bonus', dur: 8, color: '#a64dff' }
+    razzia:   { title: 'RAZZIA', sub: 'Heat +2, Drohnenstaffel: überleben = Bonus', dur: 8, color: '#a64dff' },
+    // Signature-Events: kommen nur in „ihrem“ Bezirk (district) und machen ihn spielerisch eigen
+    ampel:    { title: 'AMPEL-HACK', sub: 'Alle Ampeln auf Rot: der Verkehr kriecht – jetzt rüber!', dur: 6, color: '#05d9e8', district: 'sektor7' },
+    nebel:    { title: 'HAFENNEBEL', sub: 'Kaum Sicht – aber Drohnen verlieren dich, Heat kühlt ab', dur: 10, color: '#7df9ff', district: 'hafen9' },
+    gold:     { title: 'GOLDRAUSCH', sub: 'Beute liegt überall und zählt dreifach', dur: 10, color: '#f9c80e', district: 'basar' },
+    express:  { title: 'EXPRESS-TAKT', sub: 'Magnetbahnen im Dauertakt: jedes Gleis +5', dur: 10, color: '#c86bff', district: 'kuppel' },
+    konvoi:   { title: 'SCHWERLAST-KONVOI', sub: 'Verkehr bremst ab, Near-Miss zählt dreifach', dur: 10, color: '#3dff88', district: 'untergrund' }
   };
+  const SIGNATURE_CHANCE = .45;   // so oft kommt das Bezirks-Event statt eines allgemeinen
   const EVENT_WARN = 1.6;
-  let ev = null, evNext = 0, evLast = '', blackoutK = 0;
+  let ev = null, evNext = 0, evLast = '', blackoutK = 0, fogK = 0;
   let runs = 0, dataHintShown = false, hintLeft = 0;
 
   // ---------- Missionen ----------
@@ -658,8 +775,74 @@
   const STARS_PER_RANK = 4;
   let ms = { stars: 0, active: [] }, run = {}, runEnded = false;
   try { const m = JSON.parse(localStorage.getItem('nh-missions')); if (m && Array.isArray(m.active)) ms = m; } catch (e) {}
+  const OUTFITS = [
+    { id: 'courier', name: 'Syndikat-Kurier', stars: 0, rim: P.magenta, hoodie: '#1a0b33', visor: P.cyan },
+    { id: 'neon', name: 'Neonläufer', stars: 4, rim: P.cyan, hoodie: '#06253a', visor: '#e7fdff' },
+    { id: 'specter', name: 'Nachtgeist', stars: 8, rim: P.violet, hoodie: '#1b0933', visor: '#e9d5ff' },
+    { id: 'pulse', name: 'Pulse-Rider', stars: 12, rim: P.blue, hoodie: '#10134a', visor: P.magenta }
+  ];
+  const outfitFor = id => OUTFITS.find(outfit => outfit.id === id) || OUTFITS[0];
+  const outfitUnlocked = id => outfitFor(id).stars <= ms.stars;
+  let selectedOutfit = 'courier', previewOutfit = 'courier';
+  try {
+    const savedOutfit = ({ kurier: 'courier', geist: 'specter' })[localStorage.getItem('nh-outfit')] || localStorage.getItem('nh-outfit');
+    if (savedOutfit && outfitFor(savedOutfit).id === savedOutfit) selectedOutfit = savedOutfit;
+  } catch (e) {}
+  if (!outfitUnlocked(selectedOutfit)) selectedOutfit = 'courier';
   const mdef = id => MISSIONS.find(m => m.id === id);
   const rankIdx = () => Math.min(RANKS.length - 1, Math.floor(ms.stars / STARS_PER_RANK));
+  // ---------- Bezirke ----------
+  // Jeder Bezirk hat seine eigene Neon-Palette und eine eigene Mischung aus
+  // Reihen-Typen und Gefahren. Steuerung und Punkteregel bleiben überall gleich.
+  // Daily Runs laufen aus Fairnessgründen immer in Sektor 7.
+  const DEFAULT_MIX = { road: .62, data: .16, rail: .08, laser: .14, truck: .08, safehouse: .25 };
+  const DISTRICTS = [
+    { id: 'sektor7', name: 'Sektor 7', rank: 0,
+      blurb: 'Heimatbasis: ausgewogenes Gemisch aus Highways, Gassen und Kanälen.',
+      night: P.night, alley: P.alley, asphalt: P.asphalt, stream: '#060a33',
+      deco: [P.magenta, P.cyan, P.violet, P.blue],
+      cars: [P.magenta, P.cyan, P.blue],
+      mix: {} },
+    { id: 'hafen9', name: 'Hafen 9', rank: 1,
+      blurb: 'An den Kaikanten tritt man im Takt: mehr Datenkanäle und Magnetbahnen.',
+      night: '#02101d', alley: '#0a2940', asphalt: '#020b12', stream: '#04303a',
+      deco: [P.cyan, '#25f4ee', '#3d7bff', '#00e5b0'],
+      cars: ['#25f4ee', '#3d7bff', '#00e5b0'],
+      mix: { road: .56, data: .26, rail: .1, laser: .1, truck: .06, safehouse: .25 } },
+    { id: 'basar', name: 'Neon-Basar', rank: 2,
+      blurb: 'Goldene Fassaden, enge Gassen: dichter Verkehr und viele Laser-Gitter.',
+      night: '#17030f', alley: '#3a1030', asphalt: '#0c020a', stream: '#2a0a33',
+      deco: [P.gold, P.magenta, '#ff8a3d', P.violet],
+      cars: [P.gold, P.magenta, '#ff8a3d'],
+      mix: { road: .66, data: .14, rail: .06, laser: .24, truck: .1, safehouse: .28 } },
+    { id: 'kuppel', name: 'Kuppelstadt', rank: 3,
+      blurb: 'Violette Hochburg der Fixer: viele Magnetbahnen, wenige Verstecke.',
+      night: '#0b0426', alley: '#241048', asphalt: '#040212', stream: '#180b3d',
+      deco: [P.violet, '#c86bff', P.blue, '#ff5ce1'],
+      cars: [P.violet, '#c86bff', P.blue],
+      mix: { road: .58, data: .18, rail: .16, laser: .18, truck: .08, safehouse: .15 } },
+    { id: 'untergrund', name: 'Untergrund', rank: 4,
+      blurb: 'Giftgrüner Tiefsektor: Dauerverkehr, viele Laster, kaum Rückzugsorte.',
+      night: '#04140c', alley: '#0d2e1c', asphalt: '#020a06', stream: '#062b1a',
+      deco: ['#3dff88', '#a4ff3d', '#00e5a0', '#05ffd9'],
+      cars: ['#3dff88', '#a4ff3d', '#00ffd9'],
+      mix: { road: .74, data: .12, rail: .1, laser: .16, truck: .16, safehouse: .12 } }
+  ];
+  let district = DISTRICTS[0], mix = DEFAULT_MIX, previewDistrict = 'sektor7';
+  let selectedDistrict = 'sektor7';
+  try {
+    const savedDistrict = localStorage.getItem('nh-district');
+    if (savedDistrict && districtFor(savedDistrict).id === savedDistrict) selectedDistrict = savedDistrict;
+  } catch (e) {}
+  function districtFor(id) { return DISTRICTS.find(d => d.id === id) || DISTRICTS[0]; }
+  function districtUnlocked(d) { return rankIdx() >= d.rank; }
+  function applyDistrict(d) {
+    district = d;
+    mix = Object.assign({}, DEFAULT_MIX, d.mix);
+    P.night = d.night; P.alley = d.alley; P.asphalt = d.asphalt;
+    CAR_COLORS = d.cars.slice();
+    sprites.clear();
+  }
   function saveMissions() { try { localStorage.setItem('nh-missions', JSON.stringify(ms)); } catch (e) {} }
   function fillMissions() {
     ms.active = ms.active.filter(a => mdef(a.id) && !a.done);
@@ -705,109 +888,206 @@
       return `<div class="m${a.done ? ' done' : ''}"><span>${a.done ? '✔ ' : ''}${M.text(a.target)}</span><b>${v}/${a.target}</b><i><u style="width:${100 * v / a.target}%"></u></i></div>`;
     }).join('');
   }
-  // ---------- Bezirke ----------
-  // Jeder Bezirk: eigene Farben (pal) und eigene Mischung der Reihen (mix). Steuerung und Punkte bleiben gleich.
-  // Freigeschaltet über den Rang (Index in RANKS). Der Daily Run spielt immer in Sektor 7.
-  const BASE_MIX = { data: .16, dataRun: .55, rail: .08, laser: .14, truck: .08, roadAfterSafe: .8, roadAfterRoad: .62,
-                     safeGap: 22, safeChance: .25, gap: 1, speed: 1 };
-  const DISTRICTS = [
-    { id: 'sektor7', name: 'Sektor 7', rank: 0, info: 'ausgewogene Mischung',
-      pal: { night: '#0d0221', alley: '#1c0b3d', tile: 'rgba(166, 77, 255, .12)', asphalt: '#05010f', stream: '#060a33',
-             streamLine: '#ff2a6d', signs: ['#ff2a6d', '#05d9e8', '#a64dff', '#3d5afe'], cars: ['#ff2a6d', '#05d9e8', '#3d5afe'], truck: '#a64dff' },
-      mix: {} },
-    { id: 'hafen9', name: 'Hafen 9', rank: 1, info: 'mehr Datenkanäle und Magnetbahnen',
-      pal: { night: '#020b1f', alley: '#0a1f3d', tile: 'rgba(5, 217, 232, .10)', asphalt: '#020814', stream: '#031a3a',
-             streamLine: '#05d9e8', signs: ['#05d9e8', '#3d5afe', '#7df9ff'], cars: ['#05d9e8', '#3d5afe', '#7df9ff'], truck: '#3d5afe' },
-      mix: { data: .27, dataRun: .65, rail: .14 } },
-    { id: 'basar', name: 'Neon-Basar', rank: 2, info: 'dichter Verkehr, viele Laser',
-      pal: { night: '#1a0514', alley: '#2e0b26', tile: 'rgba(249, 200, 14, .08)', asphalt: '#10030c', stream: '#2a0820',
-             streamLine: '#f9c80e', signs: ['#f9c80e', '#ff2a6d', '#ff8a3d'], cars: ['#ff2a6d', '#ff8a3d', '#ff5ec4'], truck: '#ff2a6d' },
-      mix: { laser: .32, gap: .85, speed: 1.1, roadAfterRoad: .66 } },
-    { id: 'kuppel', name: 'Kuppelstadt', rank: 3, info: 'viele Magnetbahnen, wenige Safehouses',
-      pal: { night: '#12032b', alley: '#24104a', tile: 'rgba(208, 139, 255, .12)', asphalt: '#0a0220', stream: '#1a0640',
-             streamLine: '#d08bff', signs: ['#a64dff', '#d08bff', '#ff2a6d'], cars: ['#a64dff', '#d08bff', '#3d5afe'], truck: '#7a2cff' },
-      mix: { rail: .2, safeGap: 40, safeChance: .15 } },
-    { id: 'untergrund', name: 'Untergrund', rank: 4, info: 'Dauerverkehr, viele Laster, kaum Rückzug',
-      pal: { night: '#020f08', alley: '#0a2414', tile: 'rgba(57, 255, 20, .07)', asphalt: '#020a05', stream: '#032412',
-             streamLine: '#39ff14', signs: ['#39ff14', '#b6ff00', '#05d9e8'], cars: ['#39ff14', '#b6ff00', '#05d9e8'], truck: '#00c853' },
-      mix: { truck: .2, roadAfterSafe: .88, roadAfterRoad: .8, safeGap: 45, safeChance: .1, speed: 1.05 } }
-  ];
-  DISTRICTS.forEach(d => { d.mix = { ...BASE_MIX, ...d.mix }; });
-  const districtById = id => DISTRICTS.find(d => d.id === id) || DISTRICTS[0];
-  const districtOpen = d => rankIdx() >= d.rank;
-  let chosenDistrict = 'sektor7';
-  try { chosenDistrict = localStorage.getItem('nh-district') || 'sektor7'; } catch (e) {}
-  if (!districtOpen(districtById(chosenDistrict))) chosenDistrict = 'sektor7';
-  let D = districtById(chosenDistrict);           // Bezirk des laufenden Runs
-
-  // ---------- Garderobe ----------
-  // Outfits ändern nur die Farben der Figur. Freigeschaltet über Missionssterne.
-  const OUTFITS = [
-    { id: 'kurier', name: 'Syndikat-Kurier', stars: 0,  body: '#1a0b33', rim: '#ff2a6d', visor: '#05d9e8', chain: '#f9c80e' },
-    { id: 'neon',   name: 'Neonläufer',      stars: 4,  body: '#04142a', rim: '#05d9e8', visor: '#ff2a6d', chain: '#f9c80e' },
-    { id: 'geist',  name: 'Nachtgeist',      stars: 8,  body: '#07060f', rim: '#e6e9ff', visor: '#a64dff', chain: '#c9d1ff' },
-    { id: 'pulse',  name: 'Pulse-Rider',     stars: 12, body: '#1c0626', rim: '#ff6bd6', visor: '#fff6d6', chain: '#f9c80e' }
-  ];
-  const outfitOpen = o => ms.stars >= o.stars;
-  let outfitId = 'kurier';
-  try { outfitId = localStorage.getItem('nh-outfit') || 'kurier'; } catch (e) {}
-  const outfit = () => { const o = OUTFITS.find(o => o.id === outfitId); return o && outfitOpen(o) ? o : OUTFITS[0]; };
-
-  // ---------- Bestenliste ----------
-  const BOARD_SIZE = 10;
-  let board = { normal: [], daily: [] }, boardKind = 'normal';
-  try { const b = JSON.parse(localStorage.getItem('nh-board')); if (b && Array.isArray(b.normal) && Array.isArray(b.daily)) board = b; } catch (e) {}
-  // Trägt einen Lauf ein; gibt den Platz (1–10) zurück oder 0, wenn er nicht in die Top 10 kommt
-  function addToBoard(kind, entry) {
-    const list = board[kind];
-    list.push(entry);
-    list.sort((a, b) => b.score - a.score);
-    list.length = Math.min(list.length, BOARD_SIZE);
-    try { localStorage.setItem('nh-board', JSON.stringify(board)); } catch (e) {}
-    return list.indexOf(entry) + 1;
+  function syncTripButtons() {
+    const tb = document.getElementById('tripBtn'), open = rankIdx() >= TRIP.rank;
+    tb.disabled = !open;
+    tb.textContent = open ? 'Cosmic Neon-Trip' : `Cosmic Neon-Trip · ab Rang ${RANKS[TRIP.rank]}`;
+    document.getElementById('fxBtn').textContent = 'Trip-Effekte: ' + (fxLow ? 'reduziert' : 'voll');
   }
-  function renderBoard() {
-    document.querySelectorAll('#board .tab').forEach(t => {
-      const on = t.dataset.kind === boardKind;
-      t.classList.toggle('on', on); t.setAttribute('aria-selected', on);
-    });
-    const list = board[boardKind];
-    const esc = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-    document.getElementById('boardList').innerHTML = list.length
-      ? list.map((e, k) => {
-          const [y, m, d] = String(e.date).split('-');
-          return `<li class="${k === 0 ? 'top' : ''}"><span class="pl">${k + 1}</span><span class="sc">${e.score | 0}</span>` +
-                 `<span class="dt">${d}.${m}.${y}</span><span class="ds">${esc(e.district || 'Sektor 7')} · Reihe ${e.row | 0} · ◆ ${e.loot | 0}</span></li>`;
-        }).join('')
-      : '<li class="empty">Noch keine Läufe. Zeit für einen.</li>';
-  }
-
-  // ---------- Auswahl im Startmenü ----------
-  function renderChoices() {
-    document.getElementById('districtChips').innerHTML = DISTRICTS.map(d => {
-      const open = districtOpen(d), sw = [d.pal.alley, ...d.pal.cars].map(c => `<i style="background:${c}"></i>`).join('');
-      return `<button type="button" class="chip${d.id === chosenDistrict ? ' on' : ''}" data-id="${d.id}"${open ? '' : ' disabled'}>` +
-             `<span>${d.name}</span><span class="sw">${sw}</span><small>${open ? d.info : 'ab Rang ' + RANKS[d.rank]}</small></button>`;
-    }).join('');
-    document.getElementById('outfitChips').innerHTML = OUTFITS.map(o => {
-      const open = outfitOpen(o), sw = [o.rim, o.visor, o.chain].map(c => `<i style="background:${c}"></i>`).join('');
-      return `<button type="button" class="chip${o.id === outfit().id ? ' on' : ''}" data-id="${o.id}"${open ? '' : ' disabled'}>` +
-             `<span>${o.name}</span><span class="sw">${sw}</span><small>${open ? 'freigeschaltet' : 'ab ★ ' + o.stars}</small></button>`;
-    }).join('');
-    document.getElementById('tagStart').textContent = `${outfit().name} · ${districtById(chosenDistrict).name}`;
-  }
-
   function showStart() {
-    D = districtById(chosenDistrict); reset();       // Hintergrund im Menü zeigt den gewählten Bezirk
-    renderChoices();
     fillMissions();
+    syncTripButtons();
+    Sound.setTempo(112, 0);
     document.getElementById('rankStart').textContent = rankText();
+    document.getElementById('startTag').textContent = 'Syndikat-Kurier · ' + districtFor(selectedDistrict).name;
     document.getElementById('dailyInfo').textContent = `Daily Run ${dayKey}: dieselbe Stadt für alle, immer in Sektor 7. Dein Bestwert: ${dailyBest}`;
     renderMissions(document.getElementById('missionsStart'), 'Missionen');
     document.getElementById('over').hidden = true;
-    document.getElementById('board').hidden = true;
+    document.getElementById('leaderboard').hidden = true;
+    document.getElementById('wardrobe').hidden = true;
+    document.getElementById('districts').hidden = true;
     document.getElementById('start').hidden = false;
     state = 'menu';
+  }
+  const LEADERBOARD_KEY = 'nh-leaderboard';
+  const localDateKey = (date = new Date()) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const cleanLeaderboard = (entries, expectedMode) => Array.isArray(entries)
+    ? entries.filter(entry => entry && Number.isFinite(entry.score) && entry.score >= 0 && entry.mode === expectedMode &&
+        typeof entry.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(entry.date))
+      .map(entry => ({ score: Math.floor(entry.score), mode: expectedMode, date: entry.date, district: typeof entry.district === 'string' ? entry.district : '' }))
+      .sort((a, b) => b.score - a.score || b.date.localeCompare(a.date))
+      .slice(0, 10)
+    : [];
+  let leaderboard = { normal: [], daily: [], trip: [] }, runDate = '';
+  try {
+    const savedLeaderboard = JSON.parse(localStorage.getItem(LEADERBOARD_KEY));
+    if (savedLeaderboard) {
+      leaderboard.normal = cleanLeaderboard(savedLeaderboard.normal, 'normal');
+      leaderboard.daily = cleanLeaderboard(savedLeaderboard.daily, 'daily');
+      leaderboard.trip = cleanLeaderboard(savedLeaderboard.trip, 'trip');
+    }
+  } catch (e) {}
+  function saveLeaderboardRun() {
+    const runMode = mode === 'daily' || mode === 'trip' ? mode : 'normal';
+    leaderboard[runMode] = [...leaderboard[runMode], { score: Math.max(0, Math.floor(score)), mode: runMode, date: runDate || localDateKey(), district: district.name }]
+      .sort((a, b) => b.score - a.score || b.date.localeCompare(a.date))
+      .slice(0, 10);
+    try { localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(leaderboard)); } catch (e) {}
+  }
+  function renderLeaderboardSection(containerId, title, entries) {
+    const container = document.getElementById(containerId);
+    container.replaceChildren();
+    const heading = document.createElement('h2');
+    heading.textContent = title;
+    container.append(heading);
+    if (!entries.length) {
+      const empty = document.createElement('div');
+      empty.className = 'leaderboard-empty';
+      empty.textContent = 'Noch keine Läufe gespeichert.';
+      container.append(empty);
+      return;
+    }
+    entries.forEach((entry, index) => {
+      const row = document.createElement('div');
+      row.className = 'leaderboard-row';
+      const rank = document.createElement('span');
+      rank.className = 'leaderboard-rank';
+      rank.textContent = String(index + 1).padStart(2, '0');
+      const details = document.createElement('div');
+      details.className = 'leaderboard-entry-details';
+      const result = document.createElement('strong');
+      result.textContent = `${entry.score} Punkte`;
+      const date = document.createElement('span');
+      const [year, month, day] = entry.date.split('-');
+      date.textContent = `${entry.mode === 'daily' ? 'Daily Run' : entry.mode === 'trip' ? 'Neon-Trip' : 'Standard'} · ${entry.district ? entry.district + ' · ' : ''}${day}.${month}.${year}`;
+      details.append(result, date);
+      row.append(rank, details);
+      container.append(row);
+    });
+  }
+  function openLeaderboard() {
+    renderLeaderboardSection('normalLeaderboard', 'Standard', leaderboard.normal);
+    renderLeaderboardSection('dailyLeaderboard', 'Daily Run', leaderboard.daily);
+    renderLeaderboardSection('tripLeaderboard', 'Cosmic Neon-Trip', leaderboard.trip);
+    document.getElementById('start').hidden = true;
+    document.getElementById('leaderboard').hidden = false;
+  }
+  function drawOutfitPreview() {
+    const canvas = document.getElementById('outfitPreview');
+    const size = 112, pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = size * pixelRatio; canvas.height = size * pixelRatio;
+    const previewCtx = canvas.getContext('2d');
+    previewCtx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    previewCtx.clearRect(0, 0, size, size);
+    const avatar = playerSprite(false, previewOutfit);
+    const scale = size * .9 / Math.max(avatar.w, avatar.h);
+    const width = avatar.w * scale, height = avatar.h * scale;
+    previewCtx.drawImage(avatar.c, (size - width) / 2, (size - height) / 2, width, height);
+  }
+  function renderWardrobe() {
+    const options = document.getElementById('outfitOptions');
+    options.replaceChildren();
+    OUTFITS.forEach(outfit => {
+      const unlocked = outfitUnlocked(outfit.id);
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'outfit-choice' + (outfit.id === previewOutfit ? ' selected' : '');
+      button.setAttribute('aria-pressed', String(outfit.id === previewOutfit));
+      const name = document.createElement('strong');
+      name.textContent = outfit.name;
+      const status = document.createElement('span');
+      status.textContent = !unlocked ? `Noch ${outfit.stars - ms.stars} ★` : outfit.id === selectedOutfit ? 'Angelegt' : 'Freigeschaltet';
+      button.append(name, status);
+      button.addEventListener('click', () => { previewOutfit = outfit.id; renderWardrobe(); });
+      options.append(button);
+    });
+    const outfit = outfitFor(previewOutfit);
+    const unlocked = outfitUnlocked(outfit.id);
+    document.getElementById('outfitName').textContent = outfit.name;
+    document.getElementById('outfitStatus').textContent = unlocked
+      ? outfit.id === selectedOutfit ? 'Aktuell angelegt' : 'Freigeschaltet'
+      : `Freischaltung bei ${outfit.stars} Missionssternen · ${ms.stars}/${outfit.stars}`;
+    const equipBtn = document.getElementById('outfitEquipBtn');
+    equipBtn.disabled = !unlocked || outfit.id === selectedOutfit;
+    equipBtn.textContent = !unlocked ? `Noch ${outfit.stars - ms.stars} Sterne` : outfit.id === selectedOutfit ? 'Angelegt' : 'Outfit anlegen';
+    drawOutfitPreview();
+  }
+  function openWardrobe() {
+    previewOutfit = selectedOutfit;
+    renderWardrobe();
+    document.getElementById('start').hidden = true;
+    document.getElementById('wardrobe').hidden = false;
+  }
+  function equipOutfit() {
+    if (!outfitUnlocked(previewOutfit)) return;
+    selectedOutfit = previewOutfit;
+    try { localStorage.setItem('nh-outfit', selectedOutfit); } catch (e) {}
+    renderWardrobe();
+  }
+  // Bezirke: Karte ansehen, auswählen, speichern
+  function drawDistrictPreview() {
+    const canvas = document.getElementById('districtPreview');
+    const w = 224, h = 96, pr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = w * pr; canvas.height = h * pr;
+    const g = canvas.getContext('2d');
+    g.setTransform(pr, 0, 0, pr, 0, 0);
+    const d = districtFor(previewDistrict);
+    g.fillStyle = d.night; g.fillRect(0, 0, w, h);
+    // Skyline-Silhouette
+    g.fillStyle = 'rgba(255, 255, 255, .08)';
+    [26, 40, 32, 52, 44, 34, 58, 38].forEach((bh, k) => g.fillRect(k * 28 + 6, h * .55 - bh, 18, bh));
+    // Gasse und Highway
+    g.fillStyle = d.alley; g.fillRect(0, h * .55, w, h * .2);
+    g.fillStyle = d.asphalt; g.fillRect(0, h * .75, w, h * .25);
+    g.fillStyle = 'rgba(255, 255, 255, .12)';
+    for (let x = 6; x < w; x += 24) g.fillRect(x, h * .87, 12, 2);
+    // Neon-Schilder in den Bezirksfarben
+    d.deco.forEach((c, k) => {
+      g.shadowColor = c; g.shadowBlur = 8; g.fillStyle = c; g.globalAlpha = .85;
+      g.fillRect(14 + k * 52, h * (.12 + (k % 3) * .09), 26, 4);
+    });
+    g.globalAlpha = 1; g.shadowBlur = 0;
+  }
+  function renderDistricts() {
+    const options = document.getElementById('districtOptions');
+    options.replaceChildren();
+    DISTRICTS.forEach(d => {
+      const unlocked = districtUnlocked(d);
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'district-choice' + (d.id === previewDistrict ? ' selected' : '');
+      button.setAttribute('aria-pressed', String(d.id === previewDistrict));
+      const name = document.createElement('strong');
+      name.textContent = d.name;
+      const status = document.createElement('span');
+      status.textContent = !unlocked ? `Ab Rang ${RANKS[d.rank]} · noch ${d.rank * STARS_PER_RANK - ms.stars} ★` : d.id === selectedDistrict ? 'Gewählt' : 'Freigeschaltet';
+      button.append(name, status);
+      button.addEventListener('click', () => { previewDistrict = d.id; renderDistricts(); });
+      options.append(button);
+    });
+    const d = districtFor(previewDistrict);
+    const unlocked = districtUnlocked(d);
+    document.getElementById('districtName').textContent = d.name;
+    document.getElementById('districtStatus').textContent = unlocked ? d.blurb
+      : `Freischaltung ab Rang ${RANKS[d.rank]} · ${ms.stars}/${d.rank * STARS_PER_RANK} ★`;
+    const chooseBtn = document.getElementById('districtChooseBtn');
+    chooseBtn.disabled = !unlocked || d.id === selectedDistrict;
+    chooseBtn.textContent = !unlocked ? `Gesperrt bis Rang ${RANKS[d.rank]}` : d.id === selectedDistrict ? 'Gewählt' : 'Bezirk wählen';
+    drawDistrictPreview();
+  }
+  function openDistricts() {
+    previewDistrict = districtFor(selectedDistrict).id;
+    renderDistricts();
+    document.getElementById('start').hidden = true;
+    document.getElementById('districts').hidden = false;
+  }
+  function chooseDistrict() {
+    const d = districtFor(previewDistrict);
+    if (!districtUnlocked(d)) return;
+    selectedDistrict = d.id;
+    try { localStorage.setItem('nh-district', selectedDistrict); } catch (e) {}
+    renderDistricts();
   }
   try { runs = +localStorage.getItem('nh-runs') || 0; } catch (e) {}
   // ---------- Power-ups ----------
@@ -819,7 +1099,7 @@
   };
   const POWER_CHANCE = .06;
   // Laser-Takt in Sekunden: aus → laden (Flackern als Warnung) → an
-  const LASER = { off: 1.6, charge: .45, on: 1.0, get cycle() { return this.off + this.charge + this.on; } };
+  const LASER = { off: 1.6, charge: .7, on: 1.0, get cycle() { return this.off + this.charge + this.on; } };
   function laserState(l) {
     const t = ((l.t % LASER.cycle) + LASER.cycle) % LASER.cycle;
     return t < LASER.off ? 'off' : t < LASER.off + LASER.charge ? 'charge' : 'on';
@@ -830,6 +1110,8 @@
   let heat = 0, loot = 0, drones = [], droneTimer = 3, heatShown = -1, cause = '';
   let best = 0;
   try { best = +localStorage.getItem('nh-best') || 0; } catch (e) {}
+  let tripBest = 0;
+  try { tripBest = +localStorage.getItem('nh-best-trip') || 0; } catch (e) {}
 
   // Zufall: normal Math.random; beim Erzeugen einer Reihe ein fester Zufall aus Seed + Reihennummer.
   // So bekommt im Daily Run jede:r am selben Tag exakt dieselbe Stadt.
@@ -883,55 +1165,55 @@
     const r = getRow(row), cx = x + .5;
     for (const p of r.plats) for (const off of [0, -r.span, r.span]) {
       const a = p.x - 4 + off;
-      if (cx > a + .08 && cx < a + p.w - .08) return true;
+      if (cx > a - PAD_GRACE && cx < a + p.w + PAD_GRACE) return true;
     }
     return false;
   }
   function makeRowBase(i) {
     const decor = [];
     const n = rnd() < .7 ? 1 + Math.floor(rnd() * 2) : 0;
-    for (let k = 0; k < n; k++) decor.push({ x: rand(0, COLS - 1.5), len: rand(.6, 1.6), color: pick(D.pal.signs), ph: rand(0, 6.28), top: rnd() < .5 });
+    for (let k = 0; k < n; k++) decor.push({ x: rand(0, COLS - 1.5), len: rand(.6, 1.6), color: pick(district.deco), ph: rand(0, 6.28), top: rnd() < .5 });
     if (i < 3) return { type: 'safe', decor };
     const prev = rows.get(i - 1);
     // Safehouse: frühestens ab Reihe 15, dann etwa alle 22–40 Reihen
-    if (i >= 15 && i - lastSafehouse >= D.mix.safeGap && rnd() < D.mix.safeChance) {
+    if (i >= 15 && i - lastSafehouse >= 22 && rnd() < mix.safehouse) {
       lastSafehouse = i;
       return { type: 'safe', safehouse: true, decor: [] };
     }
     // Datenkanal: ab Reihe 6, Blöcke aus 1–3 Reihen
     if (i >= 6 && prev && !prev.safehouse &&
-        ((prev.type === 'data' && prev.run < 3 && rnd() < D.mix.dataRun) ||
-         (prev.type !== 'data' && rnd() < D.mix.data))) {
+        ((prev.type === 'data' && prev.run < 3 && rnd() < .55) ||
+         (prev.type !== 'data' && rnd() < mix.data))) {
       return makeData(i, prev);
     }
-    const roadChance = prev && prev.type === 'safe' ? D.mix.roadAfterSafe : D.mix.roadAfterRoad;
+    const roadChance = (prev && prev.type === 'safe' ? Math.min(.95, mix.road + .18) : mix.road) * TRAFFIC_DENSITY;
     // Magnetbahn: ab Reihe 10, nie zwei Gleise direkt hintereinander
-    if (i >= 10 && prev && prev.type !== 'rail' && rnd() < D.mix.rail) {
+    if (i >= 10 && prev && prev.type !== 'rail' && rnd() < mix.rail) {
       return { type: 'rail', dir: rnd() < .5 ? 1 : -1, len: 10, speed: 15, phase: 'idle', wait: rand(1, 4), warnT: 0, tx: 0, decor: [] };
     }
     if (rnd() > roadChance) {
       const r = { type: 'safe', decor };
       // Laser-Gitter: ab Reihe 14 in manchen Gassen; 1–2 Spalten bleiben immer frei
-      if (i >= 14 && rnd() < D.mix.laser) {
+      if (i >= 14 && rnd() < mix.laser) {
         const g1 = Math.floor(rnd() * COLS);
         r.laser = { t: rand(0, LASER.cycle), gaps: rnd() < .5 ? [g1] : [g1, (g1 + 4) % COLS] };
       }
       return r;
     }
-    const level = Math.min(i / 220, 1);           // wird mit der Zeit schneller (langsamer Anstieg)
+    const level = Math.min(i / 260, 1);           // wird mit der Zeit schneller (langsamer Anstieg)
     const dir = rnd() < 0.5 ? -1 : 1;
-    let speed = (rand(1.0, 1.9) + level * 1.7) * D.mix.speed;   // Zellen pro Sekunde
+    let speed = (rand(1.0, 1.9) + level * 1.5) * TRAFFIC_SPEED;   // Zellen pro Sekunde
     // Laster: selten, nie zwei Laster-Spuren direkt hintereinander, und langsamer als Autos
-    const isTruck = i > 10 && !(prev && prev.truck) && rnd() < D.mix.truck;
+    const isTruck = i > 10 && !(prev && prev.truck) && rnd() < mix.truck;
     if (isTruck) speed *= .75;
     const span = COLS + 8;                          // Spurlänge inkl. Rand
     const cars = [];
-    const color = isTruck ? D.pal.truck : pick(D.pal.cars);
+    const color = isTruck ? P.violet : pick(CAR_COLORS);
     let x = rand(0, 3);
     while (x < span - 2) {
       const w = isTruck ? pick([1.6, 1.9]) : pick([1.1, 1.3]);
-      cars.push({ x, w });
-      x += w + rand(isTruck ? 4 : 3, isTruck ? 6.5 : 6) * D.mix.gap;   // großzügige Lücken → immer ein Durchkommen
+      cars.push({ x, w, style: rnd() < .5 ? 'modern' : 'classic' });
+      x += w + rand(isTruck ? 4.5 : 3.5, isTruck ? 7 : 6.6);   // großzügige Lücken → immer ein Durchkommen
     }
     return { type: 'road', dir, speed, cars, span, truck: isTruck, color };
   }
@@ -952,9 +1234,10 @@
     score = 0; particles = []; shake = 0; glitch = 0;
     heat = 0; loot = 0; drones = []; droneTimer = 3; heatShown = -1;
     endEvent(true); evNext = rand(14, 22);
-    dataHintShown = runs >= 3; hintLeft = 0; evLast = ''; blackoutK = 0;
+    dataHintShown = runs >= 3; hintLeft = 0; evLast = ''; blackoutK = 0; fogK = 0;
     points = 0; combo = 0; comboTimer = 0; mult = 1; hopId = 0; nmHop = -1; slow = 0; popups = [];
     pw = {}; invuln = 0; powersKey = ''; renderPowers();
+    tripStage = 1; tctx.clearRect(0, 0, W, H);
     updateCombo();
     updateHud();
   }
@@ -980,12 +1263,36 @@
     player.col = nc; player.row = nr; player.hopT = 0; hopId++;
     if (nr > player.maxRow) {
       if (getRow(nr).type === 'data') run.data++;
+      if (getRow(nr).type === 'rail' && evActive('express')) { points += 5 * mult; popup(nc + .5, nr + 1.6, 'GLEIS +' + 5 * mult, '#c86bff'); }
       player.maxRow = nr;
       combo++; comboTimer = COMBO_WINDOW;
       const m = Math.min(5, 1 + Math.floor(combo / 6));
       if (m > mult) { mult = m; Sound.combo(m); popup(nc + .5, nr + 1, '×' + m + ' COMBO', P.cyan); }
       mult = m;
-      points += mult;
+      points += mult * scoreMul();
+      if (mode === 'trip') {
+        // Beat-Sprung: genau auf den Bass gesprungen?
+        const b = Sound.beat();
+        if (Math.min(b.since, b.to) <= TRIP.beatWindow) {
+          const bonus = TRIP.beatBonus * mult * scoreMul();
+          points += bonus; run.beats = (run.beats || 0) + 1;
+          comboTimer = COMBO_WINDOW + TRIP.beatCombo;
+          popup(nc + .5, nr + 1.3, 'BEAT +' + bonus, '#7df9ff');
+          burst(nc + .5, nr + .5, 10, ['#7df9ff', '#ff6bd6', '#ffffff'], 2.2, .4);
+        }
+        // nächste Stufe?
+        const st = Math.min(TRIP.maxStage, 1 + Math.floor(nr / TRIP.stageRows));
+        if (st > tripStage) {
+          tripStage = st;
+          Sound.sting('win');
+          if (!ev) {
+            document.documentElement.style.setProperty('--ev', '#ff6bd6');
+            document.getElementById('bannerTitle').textContent = 'NEON-TRIP ' + ROMAN[st - 1];
+            document.getElementById('bannerSub').textContent = 'Schneller, greller, lauter';
+            bannerEl.hidden = false; hintLeft = 1.6;
+          }
+        }
+      }
       updateCombo(true);
     }
     Sound.hop(combo);
@@ -1021,7 +1328,11 @@
   window.addEventListener('keydown', e => {
     const k = { ArrowUp: [0, 1], KeyW: [0, 1], ArrowDown: [0, -1], KeyS: [0, -1],
                 ArrowLeft: [-1, 0], KeyA: [-1, 0], ArrowRight: [1, 0], KeyD: [1, 0] }[e.code];
-    if (state !== 'play') { if (k || e.code === 'Space' || e.code === 'Enter') handleOverlayTap(); return; }
+    if (state !== 'play') {
+      if (document.getElementById('leaderboard').hidden && document.getElementById('wardrobe').hidden &&
+          document.getElementById('districts').hidden && (k || e.code === 'Space' || e.code === 'Enter')) handleOverlayTap();
+      return;
+    }
     if (k) { e.preventDefault(); move(k[0], k[1]); }
   });
   document.addEventListener('gesturestart', e => e.preventDefault());
@@ -1035,13 +1346,18 @@
   function handleOverlayTap(newMode) {
     if (state === 'dead' && performance.now() - deadAt < 600) return; // kein versehentlicher Neustart
     if (newMode) mode = newMode;
+    runDate = localDateKey();
     runSeed = mode === 'daily' ? 'daily-' + dayKey : String(Math.random());
-    D = mode === 'daily' ? DISTRICTS[0] : districtById(chosenDistrict);
+    applyDistrict(mode === 'daily' ? DISTRICTS[0] : districtFor(selectedDistrict));
+    Sound.setTempo(mode === 'trip' ? TRIP.bpm : 112, mode === 'trip' ? 5 : 0);
     Sound.init(); Sound.duck(false);
     runs++; try { localStorage.setItem('nh-runs', runs); } catch (e) {}
     reset();
     document.getElementById('start').hidden = true;
     document.getElementById('over').hidden = true;
+    document.getElementById('leaderboard').hidden = true;
+    document.getElementById('wardrobe').hidden = true;
+    document.getElementById('districts').hidden = true;
     state = 'play';
   }
 
@@ -1059,9 +1375,10 @@
         if (gap < 0 || gap > .35) continue;
         if (away && (right ? r.dir < 0 : r.dir > 0)) continue;
         nmHop = hopId; run.near++;
-        points += 2 * mult; score = points; updateHud();
+        const nmBonus = 2 * mult * (evActive('konvoi') ? 3 : 1) * scoreMul();
+        points += nmBonus; score = points; updateHud();
         comboTimer = COMBO_WINDOW; updateCombo();
-        popup(px + .5, row + 1, 'KNAPP! +' + 2 * mult, P.magenta);
+        popup(px + .5, row + 1, 'KNAPP! +' + nmBonus, P.magenta);
         burst(px + .5, row + .5, 12, [P.magenta, '#ffffff'], 2, .4);
         Sound.near();
         if (!reduceMotion) slow = .14;
@@ -1084,8 +1401,9 @@
 
   const bannerEl = document.getElementById('banner'), chipEl = document.getElementById('eventChip');
   function startEvent() {
-    const types = Object.keys(EVENTS).filter(k => k !== evLast);
-    const type = pick(types);
+    const general = Object.keys(EVENTS).filter(k => !EVENTS[k].district && k !== evLast);
+    const sig = Object.keys(EVENTS).find(k => EVENTS[k].district === district.id);
+    const type = sig && sig !== evLast && Math.random() < SIGNATURE_CHANCE ? sig : pick(general);
     ev = { type, warn: EVENT_WARN, left: EVENTS[type].dur };
     evLast = type;
     const E = EVENTS[type];
@@ -1101,18 +1419,24 @@
       heat = Math.min(5, heat + 2);
       for (let k = 0; k < 3; k++) {               // Staffel: drei Drohnen kurz nacheinander
         const dir = k % 2 ? 1 : -1, row = player.row + 1 + k;
-        if (!getRow(row).safehouse) drones.push({ row, dir, x: dir > 0 ? -2 - k * 1.5 : COLS + 1 + k * 1.5, warn: .9 + k * .35, speed: 7 });
+        if (getRow(row).type !== 'safe') drones.push({ row, dir, x: dir > 0 ? -2 - k * 1.5 : COLS + 1 + k * 1.5, warn: DRONE_WARN + k * .35, speed: 7 });
       }
       Sound.warn();
     }
-    if (ev.type === 'blackout') Sound.muffle(true);
+    if (ev.type === 'blackout' || ev.type === 'nebel') Sound.muffle(true);
+    if (ev.type === 'gold') {                         // Goldrausch: Beute auf die nächsten Reihen streuen
+      for (let i = player.row + 1; i <= player.row + 14; i++) {
+        const r = getRow(i);
+        if ((r.type === 'road' || (r.type === 'safe' && !r.safehouse)) && r.loot < 0 && Math.random() < .6) r.loot = Math.floor(Math.random() * COLS);
+      }
+    }
   }
   function endEvent(silent) {
     if (!ev) return;
     if (!silent && ev.type === 'blackout') run.blackout++;
     if (!silent && ev.type === 'razzia') {
       run.razzia++;
-      const bonus = 15 * mult;
+      const bonus = 15 * mult * scoreMul();
       points += bonus; score = points; updateHud();
       popup(player.col + .5, player.row + 1.5, 'RAZZIA ÜBERLEBT +' + bonus, P.violet);
       Sound.sting('win');
@@ -1144,7 +1468,7 @@
 
   function grabLoot(c, r) {
     loot++;
-    const lootVal = 3 * mult * (evActive('rush') ? 2 : 1);
+    const lootVal = 3 * mult * (evActive('rush') ? 2 : 1) * (evActive('gold') ? 3 : 1) * scoreMul();
     points += lootVal;
     Sound.loot();
     popup(c + .5, r + 1, '+' + lootVal, P.gold);
@@ -1169,7 +1493,7 @@
   function updateHud() {
     document.getElementById('loot').textContent = '◆ ' + loot;
     document.getElementById('score').textContent = score;
-    document.getElementById('best').textContent = (mode === 'daily' ? 'Daily ' : 'Best ') + Math.max(mode === 'daily' ? dailyBest : best, score);
+    document.getElementById('best').textContent = (mode === 'daily' ? 'Daily ' : mode === 'trip' ? 'Trip ' : 'Best ') + Math.max(mode === 'daily' ? dailyBest : mode === 'trip' ? tripBest : best, score);
   }
 
   function die(why) {
@@ -1198,10 +1522,11 @@
     shake = reduceMotion ? 0 : 0.35; glitch = reduceMotion ? 0 : 0.4;
     if (navigator.vibrate) navigator.vibrate([40, 30, 60]);
     checkMissions();
-    const prevBest = mode === 'daily' ? dailyBest : best;
+    saveLeaderboardRun();
+    const prevBest = mode === 'daily' ? dailyBest : mode === 'trip' ? tripBest : best;
     if (mode === 'daily') { if (score > dailyBest) { dailyBest = score; try { localStorage.setItem('nh-daily-' + dayKey, dailyBest); } catch (e) {} } }
+    else if (mode === 'trip') { if (score > tripBest) { tripBest = score; try { localStorage.setItem('nh-best-trip', tripBest); } catch (e) {} } }
     else if (score > best) { best = score; try { localStorage.setItem('nh-best', best); } catch (e) {} }
-    const place = score > 0 ? addToBoard(mode === 'daily' ? 'daily' : 'normal', { score, row: player.maxRow, loot, date: dayKey, district: D.name }) : 0;
     // Fortschritt von Sammel-Missionen über Runs hinweg mitnehmen
     for (const a of ms.active) { const M = mdef(a.id); if (M.total && !a.done) a.prog += M.val(run) || 0; }
     runEnded = true;                                // Sammel-Missionen zählen ab jetzt nur noch den gespeicherten Fortschritt
@@ -1212,7 +1537,7 @@
       document.getElementById('overScore').textContent = score;
       const rec = score > prevBest && score > 0;
       document.getElementById('overBest').textContent = `◆ ${loot} Beute · Reihe ${player.maxRow} · ` + (rec ? 'Neuer Rekord' : 'Rekord: ' + Math.max(prevBest, score));
-      document.getElementById('overMode').textContent = (mode === 'daily' ? `Daily Run ${dayKey} · ` : '') + D.name + (place ? ` · Platz ${place} der Bestenliste` : '');
+      document.getElementById('overMode').textContent = (mode === 'daily' ? `Daily Run ${dayKey} · ` : mode === 'trip' ? `Cosmic Neon-Trip · Stufe ${ROMAN[tripStage - 1]} · ${shownRun.beats || 0} Beats · ` : '') + district.name;
       document.getElementById('rankOver').textContent = rankText();
       renderMissions(document.getElementById('missionsOver'), 'Missionen');
       const box = document.getElementById('shareBox');
@@ -1235,7 +1560,7 @@
   function update(dt) {
     const level = Math.floor(heat);
     const slowF = pw.slow > 0 ? .4 : 1;              // Zeitlupe-Hack bremst alles außer dich
-    const speedMult = (1 + level * .08) * (evActive('rush') ? 1.3 : 1) * slowF;
+    const speedMult = (mode === 'trip' ? TRIP.speed + (tripStage - 1) * TRIP.speedPerStage : 1) * (1 + level * .06) * (evActive('rush') ? 1.3 : 1) * (evActive('ampel') ? .3 : 1) * (evActive('konvoi') ? .7 : 1) * slowF;
     const lo = Math.floor(camRow) - 2, hi = lo + Math.ceil(H / cell) + 4;
     for (let i = lo; i <= hi; i++) {
       const r = getRow(i);
@@ -1251,6 +1576,7 @@
         const near = state === 'play' && Math.abs(i - player.row) <= 4;
         if (r.phase === 'idle') {
           r.wait -= dt * slowF;
+          if (evActive('express')) r.wait = Math.min(r.wait, .5);   // Express-Takt: kaum Pause zwischen Zügen
           if (r.wait <= 0) { r.phase = 'warn'; r.warnT = 1.2; if (near) Sound.bell(); }
         } else if (r.phase === 'warn') {
           r.warnT -= dt * slowF;
@@ -1297,9 +1623,10 @@
         }
       }
       blackoutK += ((evActive('blackout') ? 1 : 0) - blackoutK) * Math.min(1, dt * 3);   // weiches Ein-/Ausblenden
+      fogK += ((evActive('nebel') ? 1 : 0) - fogK) * Math.min(1, dt * 2);
 
       let cool = getRow(player.row).safehouse ? .18 : .05;   // im Safehouse ~3,5x schneller
-      if (evActive('blackout')) cool *= 2;
+      if (evActive('blackout') || evActive('nebel')) cool *= 2;
       if (!(pw.ghost > 0)) heat = Math.max(0, heat - dt * cool);
       const razzia = evActive('razzia');
       // Power-up-Timer
@@ -1314,14 +1641,14 @@
           if (r.loot >= 0 && Math.abs(r.loot - pc) <= 1) { const c = r.loot; r.loot = -1; grabLoot(c, rr2); score = points; updateHud(); }
         }
       }
-      if ((level >= 1 || razzia) && !evActive('blackout') && !(pw.ghost > 0)) {
+      if ((level >= 1 || razzia) && !evActive('blackout') && !evActive('nebel') && !(pw.ghost > 0)) {
         droneTimer -= dt;
         if (droneTimer <= 0) {
           droneTimer = razzia ? rand(.7, 1.1) : Math.max(1.1, 4.5 - level * .7) * rand(.8, 1.2);
           const dir = Math.random() < .5 ? 1 : -1;
-          const row = player.row + pick([0, 1, 1, 2, 2, 3]);
-          if (!getRow(row).safehouse) {                 // ins Safehouse fliegen Drohnen nicht
-            drones.push({ row, dir, x: dir > 0 ? -2 : COLS + 1, warn: .9, speed: 6 + level * .8 });
+          const row = player.row + pick([1, 1, 2, 2, 3]);
+          if (getRow(row).type !== 'safe') {            // Drohnen fliegen nur über Straßen, Kanäle und Gleise – Gassen bleiben sicher
+            drones.push({ row, dir, x: dir > 0 ? -2 : COLS + 1, warn: DRONE_WARN, speed: 6 + level * .8 });
             Sound.warn();
           }
         }
@@ -1331,7 +1658,7 @@
       checkMissions();
       if (combo > 0) {
         comboTimer -= dt;
-        comboBar.style.transform = `scaleX(${Math.max(0, comboTimer / COMBO_WINDOW)})`;
+        comboBar.style.transform = `scaleX(${Math.max(0, Math.min(1, comboTimer / COMBO_WINDOW))})`;
         if (comboTimer <= 0) { combo = 0; mult = 1; updateCombo(); }
       }
     }
@@ -1355,41 +1682,42 @@
     }
     // Magnetbahn und Laser-Gitter
     {
-      const e3 = ease(player.hopT);
-      const px = player.fromCol + (player.col - player.fromCol) * e3;
-      const cr = getRow(player.row);
-      if (cr.type === 'rail' && cr.phase === 'pass' && cr.tx < px + .85 && cr.tx + cr.len > px + .15) return die('rail');
+      const hit = hitPos(), cr = getRow(hit.row);
+      if (cr.type === 'rail' && cr.phase === 'pass' && cr.tx < hit.px + 1 - HIT_PAD && cr.tx + cr.len > hit.px + HIT_PAD) return die('rail');
       if (cr.laser && player.hopT >= .5 && laserState(cr.laser) === 'on' && !cr.laser.gaps.includes(Math.round(player.col))) return die('laser');
     }
     // Im Safehouse steigen kühle Funken auf, solange Heat abkühlt
     if (dr.safehouse && heat > 0 && Math.random() < dt * 14)
       particles.push({ x: player.col + rand(.1, .9), y: player.row + .1, vx: 0, vy: rand(.8, 1.6), life: .7, max: .7, color: P.cyan, size: .05 });
 
-    const r = getRow(player.row);
+    const hit = hitPos(), r = getRow(hit.row);
     if (r.type === 'road') {
-      const t = ease(player.hopT);
-      const px = player.fromCol + (player.col - player.fromCol) * t;
-      const a = px + 0.18, b = px + 0.82;
+      const a = hit.px + HIT_PAD, b = hit.px + 1 - HIT_PAD;
       for (const c of r.cars) {
         for (const off of [0, -r.span, r.span]) {
           const cx = c.x - 4 + off;                 // Spur beginnt 4 Zellen links vom Bild
-          if (cx < b && cx + c.w > a) return die('car');
+          if (cx + CAR_SHRINK < b && cx + c.w - CAR_SHRINK > a) return die('car');
         }
       }
     }
 
     if (player.hopT >= 1) nearMiss(player.row, player.col, true);   // knapp hinter einem Auto gelandet
     {
-      const t = ease(player.hopT);
-      const px = player.fromCol + (player.col - player.fromCol) * t;
+      const h2 = hitPos();
       for (const d of drones) {
-        if (!(pw.ghost > 0) && d.warn <= 0 && d.row === player.row && d.x < px + .82 && d.x + .8 > px + .18) return die('drone');
+        if (!(pw.ghost > 0) && d.warn <= 0 && d.row === h2.row && d.x + .1 < h2.px + 1 - HIT_PAD && d.x + .7 > h2.px + HIT_PAD) return die('drone');
       }
     }
     const target = player.row - Math.floor(H / cell) * 0.32;
     if (target > camRow) camRow += (target - camRow) * Math.min(1, dt * 6);
   }
   const ease = t => 1 - (1 - t) * (1 - t);
+  // Wo du für Treffer gerade bist: bis zur Hälfte eines Sprungs zählt noch das alte Feld –
+  // so erwischt dich kein Auto in der Zielreihe, bevor du dort optisch angekommen bist.
+  function hitPos() {
+    const t = ease(player.hopT);
+    return { row: player.hopT < .5 ? player.fromRow : player.row, px: player.fromCol + (player.col - player.fromCol) * t };
+  }
 
   // ---------- Zeichnen ----------
   function rowY(i) { return H - (i - camRow + 1) * cell; }
@@ -1398,16 +1726,23 @@
   function draw(now) {
     ctx.save();
     if (shake > 0) ctx.translate(rand(-1, 1) * shake * 18, rand(-1, 1) * shake * 18);
-    ctx.fillStyle = D.pal.night; ctx.fillRect(-20, -20, W + 40, H + 40);
+    // Trip: Bild pumpt im Takt (Zoom zum Bass, stärker in höheren Stufen)
+    const b = Sound.beat();
+    beatPulse = Math.max(0, 1 - b.since / .22);
+    if (tripFx()) {
+      const z = 1 + (.018 + .005 * tripStage) * beatPulse;
+      ctx.translate(W / 2, H * .66); ctx.scale(z, z); ctx.translate(-W / 2, -H * .66);
+    }
+    ctx.fillStyle = P.night; ctx.fillRect(-20, -20, W + 40, H + 40);
     const lo = Math.floor(camRow) - 1, hi = lo + Math.ceil(H / cell) + 3;
     const t = now / 1000;
 
     for (let i = lo; i <= hi; i++) {
       const r = getRow(i), y = rowY(i);
       if (r.type === 'data') {
-        // Datenstrom: tiefblau, fließende Lichtstreifen in Fahrtrichtung
-        ctx.fillStyle = D.pal.stream; ctx.fillRect(0, y, W, cell + 1);
-        ctx.fillStyle = D.pal.streamLine; ctx.globalAlpha = .45;
+        // Datenstrom: tiefblau (bezirksabhängig getönt), fließende Lichtstreifen in Fahrtrichtung
+        ctx.fillStyle = district.stream; ctx.fillRect(0, y, W, cell + 1);
+        ctx.fillStyle = P.magenta; ctx.globalAlpha = .45;
         for (let k = 0; k < 11; k++) {
           const span = COLS + 2, xx = (((t * r.speed * 1.4 * r.dir + k * 1.9 + i * .7) % span) + span) % span - 1;
           ctx.fillRect(xx * cell, y + cell * (.15 + (k * .13) % .7), cell * (.4 + (k % 3) * .3), 1.5);
@@ -1450,7 +1785,7 @@
         continue;
       }
       if (r.type === 'road') {
-        ctx.fillStyle = D.pal.asphalt; ctx.fillRect(0, y, W, cell + 1);
+        ctx.fillStyle = P.asphalt; ctx.fillRect(0, y, W, cell + 1);
         // Neon-Bordsteine an den Rändern eines Highway-Blocks
         // (Glow ohne shadowBlur: breiter, schwacher Streifen + dünne helle Linie)
         if (getRow(i + 1).type !== 'road') {
@@ -1466,9 +1801,9 @@
         const dash = (t * r.speed * r.dir * .25 % 1 + 1) % 1;
         for (let x = -1; x <= COLS; x++) ctx.fillRect((x + dash) * cell + cell * .3, y + cell - 1.5, cell * .4, 1.5);
       } else {
-        ctx.fillStyle = D.pal.alley; ctx.fillRect(0, y, W, cell + 1);
+        ctx.fillStyle = P.alley; ctx.fillRect(0, y, W, cell + 1);
         // Gehwegplatten
-        ctx.fillStyle = D.pal.tile;
+        ctx.fillStyle = 'rgba(166, 77, 255, .12)';
         for (let x = 0; x < COLS; x++) ctx.fillRect(x * cell + 1, y + 1, cell - 2, cell - 2);
         // Neon-Schilder (flackern)
         for (const d of r.decor) {
@@ -1504,17 +1839,26 @@
       ctx.fillRect(0, rowY(d.row), W, cell);
       ctx.globalAlpha = 1;
     }
+    // Trip-Lichtschweife: alte Bilder verblassen, dann auf die Stadt legen
+    const trails = tripFx();
+    if (trails) {
+      tctx.globalCompositeOperation = 'destination-out'; tctx.fillStyle = 'rgba(0, 0, 0, .28)'; tctx.fillRect(0, 0, W, H);
+      tctx.globalCompositeOperation = 'source-over';
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .55;
+      ctx.drawImage(trail, 0, 0); ctx.restore();
+    }
     // Fahrzeuge (Hover-Taxis bzw. Geldtransporter)
     for (let i = lo; i <= hi; i++) {
       const r = getRow(i);
       if (r.type !== 'road') continue;
       const y = rowY(i), bob = Math.sin(t * 6 + i) * cell * .02;
       for (const c of r.cars) {
-        const s = carSprite(c.w, r.color, r.dir, r.truck);
+        const s = carSprite(c.w, r.color, r.dir, r.truck, c.style || 'modern');
         for (const off of [0, -r.span]) {
           const x = (c.x - 4 + off) * cell;
           if (x > W + cell || x + c.w * cell < -cell) continue;
           blit(s, x + 2, y + cell * .19 + bob);
+          if (trails) tctx.drawImage(s.c, x + 2 - s.pad, y + cell * .19 + bob - s.pad, s.w, s.h);
         }
       }
     }
@@ -1533,6 +1877,12 @@
       blit(ps, px + (cell - s) / 2, py + (cell - s) / 2 - lift);
       ctx.globalAlpha = 1;
       const cxp = px + cell / 2, cyp = py + cell / 2 - lift;
+      if (trails) tctx.drawImage(ps.c, px + (cell - s) / 2 - ps.pad, py + (cell - s) / 2 - lift - ps.pad, ps.w, ps.h);
+      if (mode === 'trip' && state === 'play') {     // Beat-Ring: schrumpft auf dich zu – trifft er dich, ist der Bass da
+        const r0 = cell * (.48 + 1.3 * Math.min(1, b.to / b.period));
+        ctx.strokeStyle = '#7df9ff'; ctx.lineWidth = 2; ctx.globalAlpha = .35 + .5 * (1 - Math.min(1, b.to / b.period));
+        ctx.beginPath(); ctx.arc(cxp, cyp, r0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+      }
       if (pw.shield > 0) {                           // Schild-Ring
         ctx.strokeStyle = P.cyan; ctx.lineWidth = 2; ctx.globalAlpha = .55 + .25 * Math.sin(t * 6);
         ctx.beginPath(); ctx.arc(cxp, cyp, cell * .48, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
@@ -1612,7 +1962,7 @@
             ctx.fillRect(x0 + 3, yc - cell * .3, 2, cell * .6); ctx.fillRect(x0 + cell - 5, yc - cell * .3, 2, cell * .6);
             continue;
           }
-          if (st === 'off') { ctx.fillStyle = 'rgba(255, 42, 109, .14)'; ctx.fillRect(x0, yc - 1, cell, 2); }
+          if (st === 'off') { ctx.fillStyle = 'rgba(255, 42, 109, .32)'; for (let k = 0; k < 4; k++) ctx.fillRect(x0 + k * cell / 4 + 2, yc - 1, cell / 8, 2); }
           else if (st === 'charge') { ctx.fillStyle = `rgba(255, 42, 109, ${.25 + Math.random() * .45})`; ctx.fillRect(x0, yc - 1.5, cell, 3); }
           else {
             ctx.fillStyle = 'rgba(255, 42, 109, .28)'; ctx.fillRect(x0, yc - cell * .2, cell, cell * .4);
@@ -1638,6 +1988,19 @@
         }
       }
     }
+    // Hafennebel: alles ab gut zwei Reihen vor dir verschwindet im Dunst
+    if (fogK > .01) {
+      ctx.globalCompositeOperation = 'source-over';
+      const clear = rowY(player.row + 2), thick = rowY(player.row + 4);
+      const fg = ctx.createLinearGradient(0, clear, 0, thick);
+      fg.addColorStop(0, 'rgba(120, 170, 190, 0)'); fg.addColorStop(1, `rgba(120, 170, 190, ${.93 * fogK})`);
+      ctx.fillStyle = fg; ctx.fillRect(-20, thick, W + 40, clear - thick);
+      ctx.fillStyle = `rgba(120, 170, 190, ${.93 * fogK})`; ctx.fillRect(-20, -20, W + 40, thick + 20);
+      ctx.fillStyle = `rgba(120, 170, 190, ${.12 * fogK})`; ctx.fillRect(-20, -20, W + 40, H + 40);
+      ctx.globalCompositeOperation = 'lighter';
+    }
+    // Goldrausch: leichter Goldschimmer
+    if (evActive('gold')) { ctx.fillStyle = 'rgba(249, 200, 14, .05)'; ctx.fillRect(0, 0, W, H); }
     // Sirenen-Licht ab Heat 2 (bei Razzia immer)
     const lvl = Math.floor(heat);
     if ((lvl >= 2 || evActive('razzia')) && state === 'play') {
@@ -1663,6 +2026,20 @@
     }
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'lighter';
+    // Trip: Warp-Streifen rasen aus der Mitte nach außen, Neon blitzt sanft im Takt
+    if (tripFx()) {
+      if (!warp.length) warp = Array.from({ length: 46 }, () => ({ a: Math.random() * Math.PI * 2, d: Math.random(), sp: .25 + Math.random() * .5 }));
+      const cx0 = W / 2, cy0 = H * .38, maxR = Math.hypot(W, H) * .6;
+      ctx.strokeStyle = '#d9f6ff'; ctx.lineWidth = 1.5; ctx.globalAlpha = .16 + .14 * beatPulse;
+      ctx.beginPath();
+      for (const w of warp) {
+        const r1 = w.d * w.d * maxR, r2 = r1 + 8 + w.d * 40;
+        ctx.moveTo(cx0 + Math.cos(w.a) * r1, cy0 + Math.sin(w.a) * r1); ctx.lineTo(cx0 + Math.cos(w.a) * r2, cy0 + Math.sin(w.a) * r2);
+      }
+      ctx.stroke();
+      ctx.fillStyle = P.magenta; ctx.globalAlpha = .05 * beatPulse; ctx.fillRect(-20, -20, W + 40, H + 40);   // sanfter Takt-Schimmer, kein harter Blitz
+      ctx.globalAlpha = 1;
+    }
     // Regen
     ctx.globalAlpha = .22; ctx.strokeStyle = P.violet; ctx.lineWidth = 1;
     ctx.beginPath();
@@ -1691,11 +2068,18 @@
     const ts = slow > 0 ? .4 : 1;                  // kurze Zeitlupe nach einem Near-Miss
     slow = Math.max(0, slow - dt);
     update(dt * ts);
+    // Trip: Warp bewegen, Farben wandern durchs Spektrum (macht der Grafikchip per CSS-Filter)
+    if (tripFx()) {
+      for (const w of warp) { w.d += w.sp * dt * (1 + tripStage * .25); if (w.d > 1) { w.d = .02; w.a = Math.random() * Math.PI * 2; } }
+      hue = (hue + dt * (18 + tripStage * 7)) % 360;
+      canvas.style.filter = `hue-rotate(${hue | 0}deg) saturate(1.35)`;
+    } else if (canvas.style.filter) canvas.style.filter = '';
     draw(now);
     requestAnimationFrame(frame);
   }
 
   state = 'menu';
+  applyDistrict(districtFor(selectedDistrict));
   reset();
   showStart();
   // Installations-Hinweis: nur auf iPhone/iPad in Safari, wenn das Spiel noch nicht vom Home-Bildschirm läuft
@@ -1708,26 +2092,22 @@
   }
   document.getElementById('playBtn').addEventListener('click', () => handleOverlayTap('normal'));
   document.getElementById('dailyBtn').addEventListener('click', () => handleOverlayTap('daily'));
+  document.getElementById('tripBtn').addEventListener('click', () => { if (rankIdx() >= TRIP.rank) handleOverlayTap('trip'); });
+  document.getElementById('fxBtn').addEventListener('click', () => {
+    fxLow = !fxLow;
+    try { localStorage.setItem('nh-fx-low', fxLow ? '1' : '0'); } catch (e) {}
+    syncTripButtons();
+  });
+  document.getElementById('leaderboardBtn').addEventListener('click', openLeaderboard);
+  document.getElementById('leaderboardBackBtn').addEventListener('click', showStart);
+  document.getElementById('wardrobeBtn').addEventListener('click', openWardrobe);
+  document.getElementById('outfitEquipBtn').addEventListener('click', equipOutfit);
+  document.getElementById('wardrobeBackBtn').addEventListener('click', showStart);
+  document.getElementById('districtBtn').addEventListener('click', openDistricts);
+  document.getElementById('districtChooseBtn').addEventListener('click', chooseDistrict);
+  document.getElementById('districtBackBtn').addEventListener('click', showStart);
   document.getElementById('againBtn').addEventListener('click', () => handleOverlayTap());
   document.getElementById('menuBtn').addEventListener('click', () => { if (performance.now() - deadAt > 600) showStart(); });
-  document.getElementById('districtChips').addEventListener('click', e => {
-    const b = e.target.closest('.chip'); if (!b || b.disabled) return;
-    chosenDistrict = b.dataset.id;
-    try { localStorage.setItem('nh-district', chosenDistrict); } catch (e2) {}
-    showStart();
-  });
-  document.getElementById('outfitChips').addEventListener('click', e => {
-    const b = e.target.closest('.chip'); if (!b || b.disabled) return;
-    outfitId = b.dataset.id;
-    try { localStorage.setItem('nh-outfit', outfitId); } catch (e2) {}
-    renderChoices();
-  });
-  document.getElementById('boardBtn').addEventListener('click', () => {
-    boardKind = 'normal'; renderBoard();
-    document.getElementById('start').hidden = true; document.getElementById('board').hidden = false;
-  });
-  document.querySelectorAll('#board .tab').forEach(t => t.addEventListener('click', () => { boardKind = t.dataset.kind; renderBoard(); }));
-  document.getElementById('boardBack').addEventListener('click', showStart);
   document.getElementById('copyBtn').addEventListener('click', () => {
     const text = document.getElementById('shareText').textContent, btn = document.getElementById('copyBtn');
     const fallback = () => {                          // Kopieren verweigert: Text markieren, dann selbst kopieren
