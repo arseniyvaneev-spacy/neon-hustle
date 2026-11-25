@@ -493,6 +493,7 @@
       zap() { tone('square', 1800, 150, .35, .15); noise(.25, .4, 8000, 0, 0, sfx, 'highpass'); },
       splash() { tone('square', 700, 60, .45, .16); noise(.4, .5, 6000, 300, 0, sfx, 'highpass'); },
       safe() { [57, 64, 69].forEach((n, k) => tone('sine', hz(n + 12), 0, .6, .12, ac && ac.currentTime + k * .07)); },
+      shades() { tone('square', 2400, 900, .04, .12); noise(.12, .25, 3000, 9000, 0, sfx, 'highpass'); tone('triangle', 1320, 0, .18, .1, ac && ac.currentTime + .05); },
       heart() { tone('sine', 62, 40, .16, .55); tone('sine', 56, 36, .14, .4, ac && ac.currentTime + .17); },
       death() { tone('sawtooth', 240, 35, .7, .35); noise(.6, .6, 4000, 120, 0, sfx, 'lowpass'); tone('sine', 90, 30, .5, .7); }
     };
@@ -568,6 +569,15 @@
     maxStage: 6
   };
   const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI'];
+  // ---------- Intro jeder Runde ----------
+  // Nahaufnahme: Sonnenbrille gleitet auf die Augen – dann zoomt die Kamera zurück ins Spiel. Antippen überspringt.
+  const INTRO = {
+    close: .95,     // Sekunden Nahaufnahme
+    zoom: .55,      // Sekunden Rauszoomen
+    glassesFrom: .12, glassesTo: .5,   // wann die Brille rutscht (Sekunden ab Start)
+    glint: [.6, .85]                   // wann der Lichtreflex über die Gläser huscht
+  };
+  let introT = 0, introClick = false;
   // Faire Treffer: nur die Mitte deines Feldes zählt, Fahrzeuge sind an den Enden etwas „weicher“
   const HIT_PAD = .26;        // so viel vom Feldrand links/rechts zählt NICHT als Treffer (0–0,5)
   const CAR_SHRINK = .1;      // Fahrzeuge zählen an jedem Ende so viel kürzer, als sie aussehen
@@ -1471,6 +1481,7 @@
   });
   window.addEventListener('pointercancel', () => { down = false; });
   window.addEventListener('pointerup', () => {
+    if (state === 'intro') { introT = Math.max(introT, INTRO.close + INTRO.zoom); down = false; return; }
     if (state !== 'play') return;
     if (down && !swiped) move(0, 1);
     down = false;
@@ -1478,6 +1489,7 @@
   window.addEventListener('keydown', e => {
     const k = { ArrowUp: [0, 1], KeyW: [0, 1], ArrowDown: [0, -1], KeyS: [0, -1],
                 ArrowLeft: [-1, 0], KeyA: [-1, 0], ArrowRight: [1, 0], KeyD: [1, 0] }[e.code];
+    if (state === 'intro') { introT = Math.max(introT, INTRO.close + INTRO.zoom); return; }
     if (state !== 'play') {
       if (document.getElementById('leaderboard').hidden && document.getElementById('wardrobe').hidden &&
           document.getElementById('districts').hidden && document.getElementById('archive').hidden && (k || e.code === 'Space' || e.code === 'Enter')) handleOverlayTap();
@@ -1509,7 +1521,7 @@
     document.getElementById('wardrobe').hidden = true;
     document.getElementById('districts').hidden = true;
     document.getElementById('archive').hidden = true;
-    state = 'play';
+    state = 'intro'; introT = 0; introClick = false;
     // Story-Einstieg: beim allerersten Run die Intro-Zeilen, bei neuem Rang ein Kapitel-Banner
     if (!story.intro) { RADIO.intro.forEach(([v, t]) => say(v, t)); story.intro = true; saveStory(); }
     if (rankIdx() > story.chapter && rankIdx() < CHAPTERS.length) {
@@ -1752,6 +1764,11 @@
 
   // ---------- Update ----------
   function update(dt) {
+    if (state === 'intro') {
+      introT += dt;
+      if (!introClick && introT >= INTRO.glassesTo) { introClick = true; Sound.shades(); if (navigator.vibrate) navigator.vibrate(12); }
+      if (introT >= INTRO.close + INTRO.zoom) state = 'play';
+    }
     const level = Math.floor(heat);
     const slowF = pw.slow > 0 ? .4 : 1;              // Zeitlupe-Hack bremst alles außer dich
     const speedMult = (mode === 'trip' ? TRIP.speed + (tripStage - 1) * TRIP.speedPerStage : 1) * (1 + level * .06) * (evActive('rush') ? 1.3 : 1) * (evActive('ampel') ? .3 : 1) * (evActive('konvoi') ? .7 : 1) * slowF;
@@ -1947,8 +1964,92 @@
   function rowY(i) { return H - (i - camRow + 1) * cell; }
   function blit(s, x, y) { ctx.drawImage(s.c, x - s.pad, y - s.pad, s.w, s.h); }
 
+  // Intro-Nahaufnahme: große Figur, Sonnenbrille rutscht auf die Augen, dann schrumpft alles auf die Spielfigur
+  function drawIntro(t) {
+    const O = outfitFor(selectedOutfit), T = introT;
+    const easeOut = x => 1 - Math.pow(1 - x, 3);
+    const back = x => { const c = 1.9; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };   // federt kurz nach
+    const k = Math.min(1, Math.max(0, (T - INTRO.close) / INTRO.zoom)), ke = easeOut(k);
+    // Größe und Mitte wandern von „Nahaufnahme“ zur echten Spielfigur
+    const big = Math.min(W, H) * .62 * (1 + .06 * Math.min(1, T / INTRO.close));
+    const S = big + (cell * .6 - big) * ke;
+    const cx0 = W / 2, cy0 = H * .44, cx1 = (player.col + .5) * cell, cy1 = rowY(player.row) + cell / 2;
+    const cx = cx0 + (cx1 - cx0) * ke, cy = cy0 + (cy1 - cy0) * ke;
+    ctx.save();
+    // dunkler Hintergrund mit Randlicht in Outfitfarbe, blendet beim Zoom aus
+    ctx.globalAlpha = 1 - ke;
+    const bg = ctx.createRadialGradient(cx0, cy0, big * .2, cx0, cy0, Math.max(W, H) * .8);
+    bg.addColorStop(0, '#1a0b33'); bg.addColorStop(1, '#030008');
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1;
+    const x = cx - S / 2, y = cy - S / 2, w = S, h = S;
+    // Hoodie
+    ctx.shadowColor = O.rim; ctx.shadowBlur = S * .12;
+    ctx.fillStyle = O.hoodie; ctx.strokeStyle = O.rim; ctx.lineWidth = Math.max(2, S * .025);
+    ctx.beginPath();
+    ctx.moveTo(x + w * .5, y); ctx.quadraticCurveTo(x + w, y, x + w, y + h * .45); ctx.lineTo(x + w, y + h * .82);
+    ctx.quadraticCurveTo(x + w, y + h, x + w * .8, y + h); ctx.lineTo(x + w * .2, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h * .82); ctx.lineTo(x, y + h * .45);
+    ctx.quadraticCurveTo(x, y, x + w * .5, y); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
+    // Gesicht im Schatten der Kapuze
+    ctx.fillStyle = 'rgba(0, 0, 0, .45)';
+    ctx.beginPath(); ctx.ellipse(x + w * .5, y + h * .42, w * .3, h * .24, 0, 0, Math.PI * 2); ctx.fill();
+    // Sonnenbrille: rutscht von der Stirn auf die Augen und federt nach
+    const g = Math.min(1, Math.max(0, (T - INTRO.glassesFrom) / (INTRO.glassesTo - INTRO.glassesFrom)));
+    const gy = y + h * (.08 + (.32 - .08) * back(g));
+    const lit = T >= INTRO.glassesTo;
+    const lw = w * .3, lh = h * .14, gap = w * .06;
+    ctx.fillStyle = '#0b0320'; ctx.strokeStyle = lit ? O.visor : '#3a3450'; ctx.lineWidth = Math.max(1.5, S * .012);
+    if (lit) { ctx.shadowColor = O.visor; ctx.shadowBlur = S * .08; }
+    for (const lx of [x + w * .5 - gap / 2 - lw, x + w * .5 + gap / 2]) {
+      rr(ctx, lx, gy, lw, lh, lh * .35); ctx.fill(); ctx.stroke();
+      if (lit) { ctx.globalAlpha = .55; ctx.fillStyle = O.visor; rr(ctx, lx + 2, gy + 2, lw - 4, lh - 4, lh * .3); ctx.fill(); ctx.globalAlpha = 1; ctx.fillStyle = '#0b0320'; }
+    }
+    ctx.fillRect(x + w * .5 - gap / 2, gy + lh * .25, gap, Math.max(2, lh * .14));   // Steg
+    ctx.shadowBlur = 0;
+    // Lichtreflex huscht diagonal über die Gläser
+    const gl = (T - INTRO.glint[0]) / (INTRO.glint[1] - INTRO.glint[0]);
+    if (gl > 0 && gl < 1) {
+      ctx.save();
+      ctx.beginPath(); rr(ctx, x + w * .5 - gap / 2 - lw, gy, lw * 2 + gap, lh, lh * .35); ctx.clip();
+      const sx = x + w * .5 - lw - gap + (lw * 2 + gap * 2) * gl;
+      ctx.fillStyle = 'rgba(255, 255, 255, .75)';
+      ctx.beginPath(); ctx.moveTo(sx, gy - 2); ctx.lineTo(sx + lw * .18, gy - 2); ctx.lineTo(sx - lw * .1, gy + lh + 2); ctx.lineTo(sx - lw * .28, gy + lh + 2); ctx.fill();
+      ctx.restore();
+    }
+    // Goldkette
+    // Goldkette: einzelne Glieder und ein Anhänger (in der Nahaufnahme sonst ein „Lächeln“)
+    ctx.fillStyle = P.gold; ctx.shadowColor = P.gold; ctx.shadowBlur = S * .04;
+    for (let k2 = 0; k2 <= 10; k2++) {
+      const a2 = (.12 + .76 * k2 / 10) * Math.PI;
+      ctx.beginPath(); ctx.arc(x + w * .5 + Math.cos(a2) * w * .26, y + h * .66 + Math.sin(a2) * h * .16, Math.max(1.2, S * .011), 0, Math.PI * 2); ctx.fill();
+    }
+    rr(ctx, x + w * .5 - w * .035, y + h * .83, w * .07, h * .09, w * .015); ctx.fill();   // Anhänger
+    ctx.shadowBlur = 0;
+    // Name und Bezirk, kurz mit Glitch
+    if (ke < .6) {
+      ctx.globalAlpha = 1 - ke / .6;
+      ctx.textAlign = 'center'; ctx.fillStyle = P.ink;
+      ctx.font = `900 ${Math.round(Math.min(W, H) * .075)}px Orbitron, sans-serif`;
+      const jx = T < .35 && Math.random() < .5 ? (Math.random() - .5) * 8 : 0;
+      ctx.fillStyle = P.magenta; ctx.fillText('KURIER 7', W / 2 - 2 + jx, cy0 + big * .72);
+      ctx.fillStyle = P.cyan; ctx.fillText('KURIER 7', W / 2 + 2 + jx, cy0 + big * .72);
+      ctx.fillStyle = P.ink; ctx.fillText('KURIER 7', W / 2 + jx, cy0 + big * .72);
+      ctx.font = `700 ${Math.round(Math.min(W, H) * .035)}px Orbitron, sans-serif`;
+      ctx.fillStyle = P.dim || '#8c7fb0';
+      ctx.fillText((mode === 'trip' ? 'COSMIC NEON-TRIP · ' : mode === 'daily' ? 'DAILY RUN · ' : '') + district.name.toUpperCase(), W / 2, cy0 + big * .72 + Math.min(W, H) * .06);
+    }
+    ctx.restore();
+  }
+
   function draw(now) {
     ctx.save();
+    if (state === 'intro') {                         // Stadt zoomt von nah (auf die Figur) auf normal
+      const k = Math.min(1, Math.max(0, (introT - INTRO.close) / INTRO.zoom)), z = 1 + 4 * Math.pow(1 - k, 3);
+      const fx = (player.col + .5) * cell, fy = rowY(player.row) + cell / 2;
+      ctx.translate(fx, fy); ctx.scale(z, z); ctx.translate(-fx, -fy);
+    }
     if (shake > 0) ctx.translate(rand(-1, 1) * shake * 18, rand(-1, 1) * shake * 18);
     // Trip: Bild pumpt im Takt (Zoom zum Bass, stärker in höheren Stufen)
     const b = Sound.beat();
@@ -2291,6 +2392,7 @@
     ctx.stroke();
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
     ctx.restore();
+    if (state === 'intro') drawIntro(now / 1000);
 
     // Glitch beim Tod: horizontale Streifen verschieben
     if (glitch > 0) {
