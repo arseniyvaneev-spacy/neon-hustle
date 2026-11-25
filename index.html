@@ -174,6 +174,7 @@
   <h1>NEON HUSTLE</h1>
   <p><b>Tippen</b> = vorwärts · <b>Wischen</b> = links, rechts, zurück</p>
   <p>Am Rechner: Pfeiltasten · M = Ton</p>
+  <p><b>Magnetbahn</b>: blinkt das Gleis rot, kommt gleich ein Zug. <b>Laser</b>: flackert er, schaltet er gleich ein; freie Spalten sind cyan markiert.</p>
   <p><b>⬡ Power-ups</b>: Schild, Zeitlupe, Tarnmodus, Magnet.</p>
   <p><b>Datenkanal</b>: auf die leuchtenden Pads springen, nicht in den Strom. <b>Safehouse</b>: hier kühlt Heat schnell ab, Drohnen kommen nicht rein.</p>
   <p>Ohne Pause vorwärts = <b>Combo-Multiplikator</b>. Knapp an Autos vorbei = <b style="color:var(--magenta)">Bonus</b>.</p>
@@ -281,6 +282,9 @@
       near() { noise(.28, .45, 600, 7000); tone('sawtooth', 260, 900, .16, .06); },
       combo(m) { [0, 4, 7, 12].forEach((n, k) => tone('square', hz(69 + (m - 2) * 2 + n), 0, .09, .08, ac && ac.currentTime + k * .05)); },
       warn() { tone('square', 988, 0, .09, .09); tone('square', 740, 0, .09, .09, ac && ac.currentTime + .13); },
+      bell() { for (let k = 0; k < 3; k++) { tone('square', 1046, 0, .08, .07, ac && ac.currentTime + k * .3); tone('square', 784, 0, .08, .07, ac && ac.currentTime + k * .3 + .15); } },
+      train() { noise(1, .55, 300, 3000, 0, sfx, 'bandpass'); tone('sawtooth', 70, 140, .9, .2); },
+      zap() { tone('square', 1800, 150, .35, .15); noise(.25, .4, 8000, 0, 0, sfx, 'highpass'); },
       splash() { tone('square', 700, 60, .45, .16); noise(.4, .5, 6000, 300, 0, sfx, 'highpass'); },
       safe() { [57, 64, 69].forEach((n, k) => tone('sine', hz(n + 12), 0, .6, .12, ac && ac.currentTime + k * .07)); },
       death() { tone('sawtooth', 240, 35, .7, .35); noise(.6, .6, 4000, 120, 0, sfx, 'lowpass'); tone('sine', 90, 30, .5, .7); }
@@ -482,6 +486,24 @@
       }
     });
   }
+  function trainSprite(len, dir) {
+    const w = Math.round(len * cell), h = Math.round(cell * .8);
+    return sprite(`train|${w}|${dir}`, w, h, cell * .3, (g, w, h) => {
+      if (dir < 0) { g.translate(w, 0); g.scale(-1, 1); }
+      g.shadowColor = P.magenta; g.shadowBlur = cell * .3;
+      g.fillStyle = '#12052b'; g.strokeStyle = P.magenta; g.lineWidth = 2.5;
+      g.beginPath();                                                 // Wagen mit spitzer Nase vorne
+      g.moveTo(4, 2); g.lineTo(w - h * .9, 2); g.quadraticCurveTo(w, h / 2, w - h * .9, h - 2); g.lineTo(4, h - 2);
+      g.quadraticCurveTo(0, h / 2, 4, 2); g.closePath(); g.fill(); g.stroke();
+      g.shadowBlur = 0;
+      g.fillStyle = 'rgba(5, 217, 232, .55)';                       // Fensterband
+      for (let x = cell * .4; x < w - h * 1.2; x += cell * .55) g.fillRect(x, h * .28, cell * .35, h * .2);
+      g.fillStyle = P.magenta; g.fillRect(cell * .3, h * .62, w - h * 1.4, 2);   // Zierstreifen
+      for (let x = cell * 3.3; x < w - h; x += cell * 3.3) { g.fillStyle = '#05010f'; g.fillRect(x, 3, 3, h - 6); }  // Wagenübergänge
+      g.shadowColor = '#fff6d6'; g.shadowBlur = cell * .4; g.fillStyle = '#fff6d6';
+      g.beginPath(); g.arc(w - h * .25, h / 2, h * .1, 0, Math.PI * 2); g.fill();  // Frontlicht
+    });
+  }
   function droneSprite() {
     const w = Math.round(cell * .8), h = Math.round(cell * .42);
     return sprite(`drone|${w}`, w, h, cell * .3, (g, w, h) => {
@@ -519,7 +541,13 @@
     ghost:  { name: 'Tarnmodus',  color: '#a64dff', dur: 6 },
     magnet: { name: 'Magnet',     color: '#ff2a6d', dur: 8 }
   };
-  const POWER_CHANCE = .06;   // Anteil der Reihen mit einem Power-up
+  const POWER_CHANCE = .06;
+  // Laser-Takt in Sekunden: aus → laden (Flackern als Warnung) → an
+  const LASER = { off: 1.6, charge: .45, on: 1.0, get cycle() { return this.off + this.charge + this.on; } };
+  function laserState(l) {
+    const t = ((l.t % LASER.cycle) + LASER.cycle) % LASER.cycle;
+    return t < LASER.off ? 'off' : t < LASER.off + LASER.charge ? 'charge' : 'on';
+  }   // Anteil der Reihen mit einem Power-up
   let pw = {}, invuln = 0, powersKey = '';
   let points = 0, combo = 0, comboTimer = 0, mult = 1, hopId = 0, nmHop = -1, slow = 0, popups = [];
   let lastSafehouse = 0, inSafehouse = false;
@@ -532,9 +560,9 @@
 
   function makeRow(i) {
     const r = makeRowBase(i);
-    r.loot = i >= 4 && r.type !== 'data' && !r.safehouse && Math.random() < .2 ? Math.floor(Math.random() * COLS) : -1;
+    r.loot = i >= 4 && r.type !== 'data' && r.type !== 'rail' && !r.safehouse && Math.random() < .2 ? Math.floor(Math.random() * COLS) : -1;
     r.power = null;
-    if (i >= 8 && r.type !== 'data' && !r.safehouse && Math.random() < POWER_CHANCE) {
+    if (i >= 8 && r.type !== 'data' && r.type !== 'rail' && !r.safehouse && Math.random() < POWER_CHANCE) {
       let c = Math.floor(Math.random() * COLS);
       if (c === r.loot) c = (c + 3) % COLS;
       r.power = { col: c, type: pick(Object.keys(POWERS)) };
@@ -580,7 +608,19 @@
       return makeData(i, prev);
     }
     const roadChance = prev && prev.type === 'safe' ? 0.8 : 0.62;
-    if (Math.random() > roadChance) return { type: 'safe', decor };
+    // Magnetbahn: ab Reihe 10, nie zwei Gleise direkt hintereinander
+    if (i >= 10 && prev && prev.type !== 'rail' && Math.random() < .08) {
+      return { type: 'rail', dir: Math.random() < .5 ? 1 : -1, len: 10, speed: 15, phase: 'idle', wait: rand(1, 4), warnT: 0, tx: 0, decor: [] };
+    }
+    if (Math.random() > roadChance) {
+      const r = { type: 'safe', decor };
+      // Laser-Gitter: ab Reihe 14 in manchen Gassen; 1–2 Spalten bleiben immer frei
+      if (i >= 14 && Math.random() < .14) {
+        const g1 = Math.floor(Math.random() * COLS);
+        r.laser = { t: rand(0, LASER.cycle), gaps: Math.random() < .5 ? [g1] : [g1, (g1 + 4) % COLS] };
+      }
+      return r;
+    }
     const level = Math.min(i / 220, 1);           // wird mit der Zeit schneller (langsamer Anstieg)
     const dir = Math.random() < 0.5 ? -1 : 1;
     let speed = rand(1.0, 1.9) + level * 1.7;      // Zellen pro Sekunde
@@ -826,8 +866,8 @@
   }
 
   function die(why) {
-    if ((why === 'car' || why === 'drone') && invuln > 0) return;
-    if ((why === 'car' || why === 'drone') && pw.shield > 0) {
+    if (['car', 'drone', 'rail', 'laser'].includes(why) && invuln > 0) return;
+    if (['car', 'drone', 'rail', 'laser'].includes(why) && pw.shield > 0) {
       pw.shield = 0; invuln = 1.2;                    // kurz unverwundbar, damit man aus dem Auto rauskommt
       const e = ease(player.hopT);
       const x = player.fromCol + (player.col - player.fromCol) * e + .5;
@@ -841,6 +881,7 @@
     cause = why || 'car';
     state = 'dead'; deadAt = performance.now();
     if (cause === 'data') Sound.splash();
+    if (cause === 'laser') Sound.zap();
     Sound.death(); Sound.duck(true);
     endEvent(true);
     combo = 0; comboEl.hidden = true;
@@ -850,7 +891,7 @@
     if (navigator.vibrate) navigator.vibrate([40, 30, 60]);
     if (score > best) { best = score; try { localStorage.setItem('nh-best', best); } catch (e) {} }
     setTimeout(() => {
-      document.getElementById('overTag').textContent = cause === 'drone' ? 'Von Drohne gescannt' : cause === 'data' ? 'Im Datenstrom gelöscht' : 'Geflasht';
+      document.getElementById('overTag').textContent = cause === 'drone' ? 'Von Drohne gescannt' : cause === 'data' ? 'Im Datenstrom gelöscht' : cause === 'rail' ? 'Von der Magnetbahn erfasst' : cause === 'laser' ? 'Vom Laser gegrillt' : 'Geflasht';
       document.getElementById('overScore').textContent = score;
       document.getElementById('overBest').textContent = `◆ ${loot} Beute · ` + (score >= best && score > 0 ? 'Neuer Rekord' : 'Rekord: ' + best);
       document.getElementById('over').hidden = false;
@@ -876,6 +917,21 @@
         }
         continue;
       }
+      if (r.type === 'rail') {
+        const near = state === 'play' && Math.abs(i - player.row) <= 4;
+        if (r.phase === 'idle') {
+          r.wait -= dt * slowF;
+          if (r.wait <= 0) { r.phase = 'warn'; r.warnT = 1.2; if (near) Sound.bell(); }
+        } else if (r.phase === 'warn') {
+          r.warnT -= dt * slowF;
+          if (r.warnT <= 0) { r.phase = 'pass'; r.tx = r.dir > 0 ? -r.len - 1 : COLS + 1; if (near) Sound.train(); }
+        } else {
+          r.tx += r.dir * r.speed * slowF * dt;
+          if ((r.dir > 0 && r.tx > COLS + 1) || (r.dir < 0 && r.tx + r.len < -1)) { r.phase = 'idle'; r.wait = rand(2.5, 6); }
+        }
+        continue;
+      }
+      if (r.laser) r.laser.t += dt * slowF;
       if (r.type !== 'road') continue;
       for (const c of r.cars) {
         c.x += r.dir * r.speed * speedMult * dt;
@@ -966,6 +1022,14 @@
         if (player.col < -.35 || player.col > COLS - .65) return die('data');
       }
     }
+    // Magnetbahn und Laser-Gitter
+    {
+      const e3 = ease(player.hopT);
+      const px = player.fromCol + (player.col - player.fromCol) * e3;
+      const cr = getRow(player.row);
+      if (cr.type === 'rail' && cr.phase === 'pass' && cr.tx < px + .85 && cr.tx + cr.len > px + .15) return die('rail');
+      if (cr.laser && player.hopT >= .5 && laserState(cr.laser) === 'on' && !cr.laser.gaps.includes(Math.round(player.col))) return die('laser');
+    }
     // Im Safehouse steigen kühle Funken auf, solange Heat abkühlt
     if (dr.safehouse && heat > 0 && Math.random() < dt * 14)
       particles.push({ x: player.col + rand(.1, .9), y: player.row + .1, vx: 0, vy: rand(.8, 1.6), life: .7, max: .7, color: P.cyan, size: .05 });
@@ -1028,6 +1092,19 @@
             blit(ps, x + 3, y + cell * .15);
           }
         }
+        continue;
+      }
+      if (r.type === 'rail') {
+        ctx.fillStyle = '#0a0716'; ctx.fillRect(0, y, W, cell + 1);
+        ctx.fillStyle = 'rgba(166, 77, 255, .25)';                    // Schwellen
+        for (let x = 0; x < COLS * 2; x++) ctx.fillRect(x * cell / 2 + cell * .1, y + cell * .18, cell * .12, cell * .64);
+        ctx.fillStyle = P.violet;                                     // Magnetschienen
+        ctx.fillRect(0, y + cell * .3, W, 2); ctx.fillRect(0, y + cell * .7 - 2, W, 2);
+        if (r.phase === 'warn') {                                     // Warnung: Gleis blinkt
+          ctx.fillStyle = Math.floor(t * 8) % 2 ? 'rgba(255, 42, 77, .22)' : 'rgba(255, 42, 109, .06)';
+          ctx.fillRect(0, y, W, cell);
+        }
+        if (r.phase === 'pass') blit(trainSprite(r.len, r.dir), r.tx * cell, y + cell * .1);
         continue;
       }
       if (r.safehouse) {
@@ -1190,6 +1267,45 @@
         }
       }
       ctx.globalAlpha = 1;
+    }
+    // Laser-Gitter und Bahnsignale leuchten über allem – auch im Blackout
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = lo; i <= hi; i++) {
+      const r = getRow(i), y = rowY(i);
+      if (r.laser) {
+        const st = laserState(r.laser), yc = y + cell / 2;
+        for (let c = 0; c < COLS; c++) {
+          const x0 = c * cell;
+          if (r.laser.gaps.includes(c)) {                         // freie Spalte: cyanfarbene Klammern
+            ctx.fillStyle = 'rgba(5, 217, 232, .5)';
+            ctx.fillRect(x0 + 3, yc - cell * .3, 2, cell * .6); ctx.fillRect(x0 + cell - 5, yc - cell * .3, 2, cell * .6);
+            continue;
+          }
+          if (st === 'off') { ctx.fillStyle = 'rgba(255, 42, 109, .14)'; ctx.fillRect(x0, yc - 1, cell, 2); }
+          else if (st === 'charge') { ctx.fillStyle = `rgba(255, 42, 109, ${.25 + Math.random() * .45})`; ctx.fillRect(x0, yc - 1.5, cell, 3); }
+          else {
+            ctx.fillStyle = 'rgba(255, 42, 109, .28)'; ctx.fillRect(x0, yc - cell * .2, cell, cell * .4);
+            ctx.fillStyle = P.magenta; ctx.fillRect(x0, yc - 3, cell, 6);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(x0, yc - 1, cell, 2);
+          }
+        }
+        ctx.fillStyle = P.magenta;                                 // Emitter an den Rändern der Laserstücke
+        for (let c = 0; c <= COLS; c++) {
+          const left = c > 0 && !r.laser.gaps.includes(c - 1), right = c < COLS && !r.laser.gaps.includes(c);
+          if (left !== right) ctx.fillRect(c * cell - 3, yc - 6, 6, 12);
+        }
+      }
+      if (r.type === 'rail') {
+        const on = r.phase === 'warn' && Math.floor(t * 8) % 2;
+        for (const x of [cell * .18, W - cell * .18]) {
+          ctx.fillStyle = on ? '#ff2a4d' : 'rgba(255, 42, 77, .2)';
+          ctx.beginPath(); ctx.arc(x, y + cell * .5, cell * .09, 0, Math.PI * 2); ctx.fill();
+          if (on) { ctx.fillStyle = 'rgba(255, 42, 77, .25)'; ctx.beginPath(); ctx.arc(x, y + cell * .5, cell * .25, 0, Math.PI * 2); ctx.fill(); }
+        }
+        if (r.phase === 'pass' && blackoutK > .01) {               // im Dunkeln: Fensterband leuchtet
+          ctx.fillStyle = 'rgba(5, 217, 232, .5)'; ctx.fillRect(r.tx * cell, y + cell * .38, r.len * cell, cell * .12);
+        }
+      }
     }
     // Sirenen-Licht ab Heat 2 (bei Razzia immer)
     const lvl = Math.floor(heat);

@@ -24,7 +24,7 @@
 
 ## Was schon drin ist
 
-- Raster mit 9 Spalten, endlos erzeugte Reihen (Straße, Gasse, Datenkanal, Safehouse)
+- Raster mit 9 Spalten, endlos erzeugte Reihen (Straße, Gasse, Datenkanal, Safehouse, Magnetbahn, Laser-Gitter)
 - Beute (◆) und Heat (5 Stufen): schnellerer Verkehr, Polizei-Drohnen mit Vorwarnung
 - Combo-Multiplikator (bis ×5) und Near-Miss-Bonus mit Mini-Zeitlupe
 - Datenkanal mit treibenden Server-Plattformen, auf denen man mitfährt
@@ -35,9 +35,8 @@
 
 ## Roadmap
 
-1. **Weitere Spuren:** Magnetbahn mit Warnlicht, Laser-Gitter
-2. **Langzeitmotivation:** Daily Run (gleiche Karte für alle), Missionen
-3. **Später / nur wenn Zeit:** Outfits mit Beute kaufen, Boss (Polizei-Mech)
-4. **Veröffentlichung:** als PWA auf den Home-Bildschirm; App Store nur mit Mac und Developer-Account
+1. **Langzeitmotivation:** Daily Run (gleiche Karte für alle), Missionen
+2. **Später / nur wenn Zeit:** Outfits mit Beute kaufen, Boss (Polizei-Mech)
+3. **Veröffentlichung:** als PWA auf den Home-Bildschirm; App Store nur mit Mac und Developer-Account
 
 **Nicht vor Version 1:** Shop, Skins, mehrere Charaktere.
