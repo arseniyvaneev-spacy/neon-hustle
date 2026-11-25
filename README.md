@@ -40,7 +40,7 @@ Ein Endless-Hopper im Neon-Cyberpunk-Look fürs iPhone. Du bist Kurier eines Syn
 
 Du bist Kurier Nr. 7, ohne Erinnerung, mit einem versiegelten Paket – und du weißt nur, dass du rennen musst. Eine Stimme namens SPIEGEL sieht dich durch jede Kamera der Stadt; eine andere, Eins, hilft dir. Meistens.
 
-- **Der Jäger** folgt dir von unten. Bleibst du etwa 5 Sekunden stehen, hat er dich. Wird er nah, färbt sich der Rand rot und du hörst einen Herzschlag. Im Safehouse (oder wenn dein EMP-Schild platzt) verliert er deine Spur.
+- **Der Jäger** folgt dir von unten. Bleibst du etwa 10 Sekunden stehen, hat er dich. Wird er nah, färbt sich der Rand rot und du hörst einen Herzschlag. Im Safehouse (oder wenn dein EMP-Schild platzt) verliert er deine Spur.
 - **Erinnerungs-Splitter** (weiße, flimmernde Kristalle, höchstens einer pro Run) erzählen Stück für Stück, warum du rennst. 16 Erinnerungen in 5 Kapiteln; jedes Kapitel öffnet sich mit dem nächsten Rang. Nachlesen im Menü unter **Archiv**.
 - **Funksprüche** tippen sich unten ins Bild, ohne das Spiel anzuhalten.
 

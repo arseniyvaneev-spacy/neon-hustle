@@ -545,12 +545,12 @@
   // ---------- Der Jäger ----------
   // Rückt von unten nach. Bleibst du zu lange stehen, holt er dich ein. Ein Safehouse schüttelt ihn ab.
   const HUNTER = {
-    startRow: 10,   // ab dieser Reihe ist er da
-    gap: 7,         // so viele Reihen hinter dir taucht er auf – weiter weg bleibt er nie
-    speed: 1.25,    // Reihen pro Sekunde (bei Stillstand erwischt er dich nach ~gap/speed Sekunden)
+    startRow: 15,   // ab dieser Reihe ist er da
+    gap: 8,         // so viele Reihen hinter dir taucht er auf – weiter weg bleibt er nie
+    speed: .8,      // Reihen pro Sekunde (bei Stillstand erwischt er dich nach ~gap/speed Sekunden, hier ~10 s)
     tripMul: 1.3,   // im Neon-Trip schneller
     shake: 5,       // Safehouse/Schild: so viele Reihen Abstand gewinnst du
-    warnGap: 3.5    // ab hier wird der Rand rot und du hörst den Herzschlag
+    warnGap: 3      // ab hier wird der Rand rot und du hörst den Herzschlag
   };
 
   // ---------- Cosmic Neon-Trip ----------
