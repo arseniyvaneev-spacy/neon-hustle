@@ -32,7 +32,6 @@
 - Sound und Synthwave-Musik, live mit Web Audio erzeugt; Intensität folgt der Heat
 - Events (ab Reihe 12, etwa alle 20–30 s): Blackout, Rush Hour, Razzia
 - Power-ups (ab Reihe 8, auf ca. 6 % der Reihen): EMP-Schild, Zeitlupe, Tarnmodus, Magnet
-
 - Daily Run (feste Stadt pro Tag per Seed) mit teilbarem Ergebnis
 - Missionen mit Sternen und 6 Rängen
 
