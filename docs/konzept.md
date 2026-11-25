@@ -30,14 +30,14 @@
 - Datenkanal mit treibenden Server-Plattformen, auf denen man mitfährt
 - Safehouse: Heat kühlt schnell ab, keine Drohnen, kostet aber die Combo
 - Sound und Synthwave-Musik, live mit Web Audio erzeugt; Intensität folgt der Heat
+- Events (ab Reihe 12, etwa alle 20–30 s): Blackout, Rush Hour, Razzia
 
 ## Roadmap
 
-1. **Paket C – Events:** Blackout, Rush Hour, Razzia
-2. **Power-ups:** EMP-Schild, Zeitlupe-Hack, Tarnmodus, Magnet (selten!)
-3. **Weitere Spuren:** Magnetbahn mit Warnlicht, Laser-Gitter
-4. **Langzeitmotivation:** Daily Run (gleiche Karte für alle), Missionen
-5. **Später / nur wenn Zeit:** Outfits mit Beute kaufen, Boss (Polizei-Mech)
-6. **Veröffentlichung:** als PWA auf den Home-Bildschirm; App Store nur mit Mac und Developer-Account
+1. **Power-ups:** EMP-Schild, Zeitlupe-Hack, Tarnmodus, Magnet (selten!)
+2. **Weitere Spuren:** Magnetbahn mit Warnlicht, Laser-Gitter
+3. **Langzeitmotivation:** Daily Run (gleiche Karte für alle), Missionen
+4. **Später / nur wenn Zeit:** Outfits mit Beute kaufen, Boss (Polizei-Mech)
+5. **Veröffentlichung:** als PWA auf den Home-Bildschirm; App Store nur mit Mac und Developer-Account
 
 **Nicht vor Version 1:** Shop, Skins, mehrere Charaktere.
