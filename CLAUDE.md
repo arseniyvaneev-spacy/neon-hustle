@@ -8,6 +8,7 @@ Neon Hustle: ein Endless-Hopper im Neon-Cyberpunk-Look, gebaut als Web-Spiel fü
 - Das ganze Spiel bleibt **eine Datei**: `index.html` (HTML, CSS, JS). Keine Build-Tools, keine externen Bilder oder Sounddateien. Schriften kommen von Google Fonts.
 - Grafik: Canvas 2D. Teure Leuchteffekte (`shadowBlur`) nur in einmal gerenderten Sprites (`sprite()`), nie pro Frame.
 - Sound: live mit Web Audio im `Sound`-Modul erzeugt.
+- PWA: `manifest.webmanifest`, `icons/`, `sw.js`. `index.html` holt der Service Worker immer erst aus dem Netz; kommen neue Dateien in den Offline-Speicher (`CORE`), `CACHE` in `sw.js` hochzählen.
 - Farben: Lila, Pink, Blau, Cyan auf fast Schwarz; Gold nur für Beute.
 - Der Nutzer lernt programmieren: neue Mechaniken mit verständlichen Kommentaren und gut benannten Stellschrauben (Konstanten) bauen.
 

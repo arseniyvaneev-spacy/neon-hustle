@@ -5,6 +5,13 @@
 <title>Neon Hustle Prototyp</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Neon Hustle">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d0221">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Rajdhani:wght@500;700&display=swap">
 <style>
@@ -84,6 +91,8 @@
   .btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
   .btn:active { transform: scale(.97); }
   .note { color: var(--dim); font-size: 14px; }
+  .install { font-size: 14px; color: var(--ink); padding: 8px 12px; border-radius: 10px; border: 1px dashed var(--cyan); background: rgb(5 217 232 / .08); }
+  .install b { color: var(--cyan); }
   .rank { font: 600 12px var(--display); letter-spacing: .2em; text-transform: uppercase; color: var(--cyan); text-shadow: 0 0 8px rgb(5 217 232 / .6); }
   .missions { display: grid; gap: 8px; width: 100%; text-align: left; }
   .missions h2 { margin: 4px 0 0; font: 700 12px var(--display); letter-spacing: .22em; text-transform: uppercase; color: var(--dim); }
@@ -209,6 +218,7 @@
       <button id="dailyBtn" class="btn" type="button">Daily Run</button>
     </div>
     <div class="note" id="dailyInfo"></div>
+    <div class="install" id="installHint" hidden>Als App spielen: in Safari auf <b>Teilen</b> tippen, dann <b>„Zum Home-Bildschirm“</b>.</div>
     <div class="missions" id="missionsStart"></div>
     <details class="howto">
       <summary>Wie spielt man?</summary>
@@ -1542,6 +1552,14 @@
   state = 'menu';
   reset();
   showStart();
+  // Installations-Hinweis: nur auf iPhone/iPad in Safari, wenn das Spiel noch nicht vom Home-Bildschirm läuft
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+  document.getElementById('installHint').hidden = !(ios && !standalone && location.protocol === 'https:');
+  // Offline-Speicher (Service Worker); klappt nur auf der echten Website, nicht in jeder Vorschau
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    try { navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {}
+  }
   document.getElementById('playBtn').addEventListener('click', () => handleOverlayTap('normal'));
   document.getElementById('dailyBtn').addEventListener('click', () => handleOverlayTap('daily'));
   document.getElementById('againBtn').addEventListener('click', () => handleOverlayTap());
