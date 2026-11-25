@@ -94,6 +94,27 @@
   #combo i { display: block; width: 64px; height: 3px; background: rgb(5 217 232 / .15); border-radius: 2px; overflow: hidden; }
   #combo u { display: block; height: 100%; background: var(--cyan); box-shadow: 0 0 6px var(--cyan); transform-origin: left; }
   @keyframes pop { 0% { transform: scale(1.6); } 100% { transform: scale(1); } }
+  #banner {
+    position: fixed; left: 0; right: 0; top: 34%; display: grid; justify-items: center; gap: 6px;
+    pointer-events: none; text-align: center;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  #bannerTitle {
+    font: 900 clamp(30px, 10vw, 56px)/1 var(--display); letter-spacing: .06em; color: var(--ink);
+    text-shadow: -2px 0 var(--magenta), 2px 0 var(--cyan), 0 0 26px var(--ev, var(--magenta));
+    animation: bannerIn .35s ease-out, glitch 1.2s infinite steps(1);
+  }
+  #bannerSub { font: 700 15px var(--body); letter-spacing: .08em; color: var(--ink); text-shadow: 0 0 10px var(--ev, var(--magenta)); }
+  @keyframes bannerIn { from { transform: scale(1.8); opacity: 0; } to { transform: none; opacity: 1; } }
+  #eventChip {
+    position: fixed; top: calc(env(safe-area-inset-top, 0px) + 112px); left: 50%; transform: translateX(-50%);
+    pointer-events: none; padding: 4px 12px; border-radius: 999px;
+    font: 700 12px var(--display); letter-spacing: .18em; text-transform: uppercase; color: var(--ink);
+    border: 1.5px solid var(--ev, var(--magenta)); background: rgb(13 2 33 / .7);
+    box-shadow: 0 0 12px var(--ev, var(--magenta)); font-variant-numeric: tabular-nums;
+  }
+  @media (prefers-reduced-motion: reduce) { #bannerTitle { animation: none; } }
   #mute {
     position: fixed; z-index: 5;
     right: max(14px, env(safe-area-inset-right, 0px));
@@ -127,6 +148,8 @@
 </div>
 <div id="combo" hidden><b id="comboMult">×2</b><span id="comboCount">Combo 6</span><i><u id="comboBar"></u></i></div>
 <button id="mute" type="button" aria-label="Ton aus">♪</button>
+<div id="banner" hidden><b id="bannerTitle">BLACKOUT</b><span id="bannerSub"></span></div>
+<div id="eventChip" hidden></div>
 
 <div class="overlay" id="start">
   <div class="tag">Syndikat-Kurier · Sektor 7</div>
@@ -149,7 +172,7 @@
 (() => {
   // ---------- Sound: alles live mit Web Audio erzeugt, keine Dateien ----------
   const Sound = (() => {
-    let ac = null, master, sfx, music, bassFilter, noiseBuf, timer = null;
+    let ac = null, master, sfx, music, musicLP, bassFilter, noiseBuf, timer = null;
     let step = 0, nextT = 0, intensity = 0, muted = false;
     try { muted = localStorage.getItem('nh-mute') === '1'; } catch (e) {}
     const BPM = 112, STEP = 60 / BPM / 4;                    // Sechzehntel
@@ -166,7 +189,8 @@
       const comp = ac.createDynamicsCompressor(); comp.connect(ac.destination);
       master = ac.createGain(); master.gain.value = muted ? 0 : .9; master.connect(comp);
       sfx = ac.createGain(); sfx.gain.value = .55; sfx.connect(master);
-      music = ac.createGain(); music.gain.value = .22; music.connect(master);
+      musicLP = ac.createBiquadFilter(); musicLP.type = 'lowpass'; musicLP.frequency.value = 18000; musicLP.connect(master);
+      music = ac.createGain(); music.gain.value = .22; music.connect(musicLP);
       bassFilter = ac.createBiquadFilter(); bassFilter.type = 'lowpass'; bassFilter.frequency.value = 500; bassFilter.Q.value = 6;
       bassFilter.connect(music);
       noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
@@ -213,6 +237,15 @@
       init,
       setIntensity(l) { intensity = l; },
       pause(on) { if (ac) on ? ac.suspend() : ac.resume(); },
+      muffle(on) { if (ac) musicLP.frequency.setTargetAtTime(on ? 420 : 18000, ac.currentTime, .25); },
+      sting(type) {
+        if (!ac) return;
+        const t0 = ac.currentTime;
+        if (type === 'blackout') { tone('sawtooth', 420, 30, 1.1, .3); noise(.9, .3, 2000, 80, 0, sfx, 'lowpass'); }
+        if (type === 'rush') { [0, .22].forEach(d => { tone('square', 392, 0, .18, .12, t0 + d); tone('square', 494, 0, .18, .1, t0 + d); }); }
+        if (type === 'razzia') { for (let k = 0; k < 3; k++) { tone('sawtooth', 600, 1100, .25, .1, t0 + k * .5); tone('sawtooth', 1100, 600, .25, .1, t0 + k * .5 + .25); } }
+        if (type === 'win') { [0, 4, 7, 12, 16].forEach((n, k) => tone('triangle', hz(72 + n), 0, .14, .14, t0 + k * .06)); }
+      },
       duck(on) { if (ac) music.gain.setTargetAtTime(on ? .06 : .22, ac.currentTime, .15); },
       toggleMute() {
         muted = !muted;
@@ -419,6 +452,15 @@
   let rows, player, camRow, score, state, deadAt, lastT, shake = 0, glitch = 0;
   let particles = [];
   let haze = null;
+  // ---------- Events ----------
+  // Ein Event kündigt sich 1,6 s an (Banner), läuft dann eine Weile, danach Pause bis zum nächsten.
+  const EVENTS = {
+    blackout: { title: 'BLACKOUT', sub: 'Stromausfall: Drohnen sehen dich nicht, Heat kühlt ab', dur: 10, color: '#3d5afe' },
+    rush:     { title: 'RUSH HOUR', sub: 'Verkehr gibt Gas: Beute zählt doppelt', dur: 12, color: '#ff2a6d' },
+    razzia:   { title: 'RAZZIA', sub: 'Heat +2, Drohnenstaffel: überleben = Bonus', dur: 8, color: '#a64dff' }
+  };
+  const EVENT_WARN = 1.6;
+  let ev = null, evNext = 0, evLast = '', blackoutK = 0;
   let points = 0, combo = 0, comboTimer = 0, mult = 1, hopId = 0, nmHop = -1, slow = 0, popups = [];
   let lastSafehouse = 0, inSafehouse = false;
   let heat = 0, loot = 0, drones = [], droneTimer = 3, heatShown = -1, cause = '';
@@ -500,6 +542,7 @@
     camRow = -2;
     score = 0; particles = []; shake = 0; glitch = 0;
     heat = 0; loot = 0; drones = []; droneTimer = 3; heatShown = -1;
+    endEvent(true); evNext = rand(14, 22); evLast = ''; blackoutK = 0;
     points = 0; combo = 0; comboTimer = 0; mult = 1; hopId = 0; nmHop = -1; slow = 0; popups = [];
     updateCombo();
     updateHud();
@@ -622,11 +665,51 @@
     if (bump && mult > 1) { comboEl.classList.remove('pop'); void comboEl.offsetWidth; comboEl.classList.add('pop'); }
   }
 
+  const bannerEl = document.getElementById('banner'), chipEl = document.getElementById('eventChip');
+  function startEvent() {
+    const types = Object.keys(EVENTS).filter(k => k !== evLast);
+    const type = pick(types);
+    ev = { type, warn: EVENT_WARN, left: EVENTS[type].dur };
+    evLast = type;
+    const E = EVENTS[type];
+    document.documentElement.style.setProperty('--ev', E.color);
+    document.getElementById('bannerTitle').textContent = E.title;
+    document.getElementById('bannerSub').textContent = E.sub;
+    bannerEl.hidden = false;
+    Sound.sting(type);
+  }
+  function activateEvent() {
+    bannerEl.hidden = true;
+    if (ev.type === 'razzia') {
+      heat = Math.min(5, heat + 2);
+      for (let k = 0; k < 3; k++) {               // Staffel: drei Drohnen kurz nacheinander
+        const dir = k % 2 ? 1 : -1, row = player.row + 1 + k;
+        if (!getRow(row).safehouse) drones.push({ row, dir, x: dir > 0 ? -2 - k * 1.5 : COLS + 1 + k * 1.5, warn: .9 + k * .35, speed: 7 });
+      }
+      Sound.warn();
+    }
+    if (ev.type === 'blackout') Sound.muffle(true);
+  }
+  function endEvent(silent) {
+    if (!ev) return;
+    if (!silent && ev.type === 'razzia') {
+      const bonus = 15 * mult;
+      points += bonus; score = points; updateHud();
+      popup(player.col + .5, player.row + 1.5, 'RAZZIA ÜBERLEBT +' + bonus, P.violet);
+      Sound.sting('win');
+    }
+    Sound.muffle(false);
+    ev = null; bannerEl.hidden = true; chipEl.hidden = true;
+    evNext = rand(18, 28);
+  }
+  const evActive = type => ev && ev.type === type && ev.warn <= 0;
+
   function grabLoot(c, r) {
     loot++;
-    points += 3 * mult;
+    const lootVal = 3 * mult * (evActive('rush') ? 2 : 1);
+    points += lootVal;
     Sound.loot();
-    popup(c + .5, r + 1, '+' + 3 * mult, P.gold);
+    popup(c + .5, r + 1, '+' + lootVal, P.gold);
     heat = Math.min(5, heat + .45);
     burst(c + .5, r, 18, [P.gold, '#fff3b0', P.magenta], 2.5, .6);
     if (navigator.vibrate) navigator.vibrate([10, 20, 10]);
@@ -656,6 +739,7 @@
     state = 'dead'; deadAt = performance.now();
     if (cause === 'data') Sound.splash();
     Sound.death(); Sound.duck(true);
+    endEvent(true);
     combo = 0; comboEl.hidden = true;
     const t = ease(player.hopT);
     burst(player.fromCol + (player.col - player.fromCol) * t + .5, player.row + .5, 40, [P.magenta, P.violet, P.cyan, P.blue, '#ffffff'], 4, .9);
@@ -676,7 +760,7 @@
   // ---------- Update ----------
   function update(dt) {
     const level = Math.floor(heat);
-    const speedMult = 1 + level * .12;
+    const speedMult = (1 + level * .12) * (evActive('rush') ? 1.45 : 1);
     const lo = Math.floor(camRow) - 2, hi = lo + Math.ceil(H / cell) + 4;
     for (let i = lo; i <= hi; i++) {
       const r = getRow(i);
@@ -703,12 +787,27 @@
     for (const d of drones) { if (d.warn > 0) d.warn -= dt; else d.x += d.dir * d.speed * dt; }
     drones = drones.filter(d => d.x > -3 && d.x < COLS + 3);
     if (state === 'play') {
-      const cool = getRow(player.row).safehouse ? .18 : .05;   // im Safehouse ~3,5x schneller
+      // Event-Ablauf: erst ab Reihe 12
+      if (!ev && player.maxRow >= 12) { evNext -= dt; if (evNext <= 0) startEvent(); }
+      if (ev) {
+        if (ev.warn > 0) { ev.warn -= dt; if (ev.warn <= 0) activateEvent(); }
+        else {
+          ev.left -= dt;
+          chipEl.hidden = false;
+          chipEl.textContent = `${EVENTS[ev.type].title} ${Math.ceil(ev.left)}`;
+          if (ev.left <= 0) endEvent(false);
+        }
+      }
+      blackoutK += ((evActive('blackout') ? 1 : 0) - blackoutK) * Math.min(1, dt * 3);   // weiches Ein-/Ausblenden
+
+      let cool = getRow(player.row).safehouse ? .18 : .05;   // im Safehouse ~3,5x schneller
+      if (evActive('blackout')) cool *= 2;
       heat = Math.max(0, heat - dt * cool);
-      if (level >= 1) {
+      const razzia = evActive('razzia');
+      if ((level >= 1 || razzia) && !evActive('blackout')) {
         droneTimer -= dt;
         if (droneTimer <= 0) {
-          droneTimer = Math.max(1.1, 4.5 - level * .7) * rand(.8, 1.2);
+          droneTimer = razzia ? rand(.7, 1.1) : Math.max(1.1, 4.5 - level * .7) * rand(.8, 1.2);
           const dir = Math.random() < .5 ? 1 : -1;
           const row = player.row + pick([0, 1, 1, 2, 2, 3]);
           if (!getRow(row).safehouse) {                 // ins Safehouse fliegen Drohnen nicht
@@ -917,9 +1016,50 @@
       ctx.beginPath(); ctx.moveTo(d.x * cell + cell * .4, y + cell * .4);
       ctx.lineTo(d.x * cell - cell * .05, y + cell * .7); ctx.lineTo(d.x * cell + cell * .85, y + cell * .7); ctx.fill();
     }
-    // Sirenen-Licht ab Heat 2
+    // Blackout: alles dunkel bis auf einen Lichtkreis um dich und die Fahrzeuglichter
+    if (blackoutK > .01) {
+      ctx.globalCompositeOperation = 'source-over';
+      const e2 = ease(player.hopT);
+      const cx = (player.fromCol + (player.col - player.fromCol) * e2 + .5) * cell;
+      const cy = rowY(player.fromRow + (player.row - player.fromRow) * e2) + cell / 2;
+      const g = ctx.createRadialGradient(cx, cy, cell * .8, cx, cy, cell * 2.6);
+      g.addColorStop(0, 'rgba(2, 0, 8, 0)');
+      g.addColorStop(1, `rgba(2, 0, 8, ${.94 * blackoutK})`);
+      ctx.fillStyle = g; ctx.fillRect(-20, -20, W + 40, H + 40);
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = blackoutK;
+      for (let i = lo; i <= hi; i++) {
+        const r = getRow(i);
+        if (r.type === 'data') {                    // Server-LEDs leuchten im Dunkeln weiter
+          ctx.strokeStyle = P.cyan; ctx.lineWidth = 1.5;
+          for (const pl of r.plats) for (const off of [0, -r.span]) {
+            const x0 = (pl.x - 4 + off) * cell;
+            if (x0 > W + cell || x0 + pl.w * cell < -cell) continue;
+            ctx.strokeRect(x0 + 4, rowY(i) + cell * .2, pl.w * cell - 8, cell * .6);
+          }
+          continue;
+        }
+        if (r.type !== 'road') continue;
+        const y = rowY(i) + cell * .5;
+        for (const c of r.cars) for (const off of [0, -r.span]) {
+          const x0 = (c.x - 4 + off) * cell;
+          if (x0 > W + cell * 2 || x0 + c.w * cell < -cell * 2) continue;
+          const front = r.dir > 0 ? x0 + c.w * cell - 4 : x0 + 4, back = r.dir > 0 ? x0 + 4 : x0 + c.w * cell - 4;
+          // Lichtkegel nach vorne
+          const beam = ctx.createLinearGradient(front, 0, front + r.dir * cell * 1.6, 0);
+          beam.addColorStop(0, 'rgba(255, 246, 214, .35)'); beam.addColorStop(1, 'rgba(255, 246, 214, 0)');
+          ctx.fillStyle = beam;
+          ctx.beginPath(); ctx.moveTo(front, y - cell * .12); ctx.lineTo(front + r.dir * cell * 1.6, y - cell * .38);
+          ctx.lineTo(front + r.dir * cell * 1.6, y + cell * .38); ctx.lineTo(front, y + cell * .12); ctx.fill();
+          ctx.fillStyle = '#fff6d6'; ctx.fillRect(front - 2, y - cell * .2, 4, cell * .12); ctx.fillRect(front - 2, y + cell * .08, 4, cell * .12);
+          ctx.fillStyle = '#ff2a4d'; ctx.fillRect(back - 2, y - cell * .2, 4, cell * .4);
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+    // Sirenen-Licht ab Heat 2 (bei Razzia immer)
     const lvl = Math.floor(heat);
-    if (lvl >= 2 && state === 'play') {
+    if ((lvl >= 2 || evActive('razzia')) && state === 'play') {
       ctx.fillStyle = Math.floor(t * 4) % 2 ? P.magenta : P.blue;
       ctx.globalAlpha = .025 * lvl * (.6 + .4 * Math.sin(t * 8));
       ctx.fillRect(0, 0, W, H);
