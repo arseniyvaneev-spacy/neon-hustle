@@ -12,6 +12,10 @@ Neon Hustle: ein Endless-Hopper im Neon-Cyberpunk-Look, gebaut als Web-Spiel fü
 - Farben: Lila, Pink, Blau, Cyan auf fast Schwarz; Gold nur für Beute.
 - Der Nutzer lernt programmieren: neue Mechaniken mit verständlichen Kommentaren und gut benannten Stellschrauben (Konstanten) bauen.
 
+## Story
+
+Ton: düster, leiser psychologischer Horror – Unbehagen statt Schockmomente. **Die Wendung der Story (die späten Einträge in `MEMORIES`) nicht verraten** – nicht in Antworten, Commits, PR-Texten oder Doku. Snow soll sie beim Spielen selbst entdecken.
+
 ## Testen
 
 Mit dem vorinstallierten Playwright `index.html` headless laden, ein paar Züge per Tastatur spielen, auf `pageerror` prüfen und einen Screenshot ansehen. Für seltene Elemente (Datenkanal, Safehouse, Laster) eine Testkopie erzeugen, in der sie sofort vorkommen, und diese danach löschen.
