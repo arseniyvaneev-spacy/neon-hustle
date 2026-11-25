@@ -27,6 +27,13 @@ Ein Endless-Hopper im Neon-Cyberpunk-Look fürs iPhone. Du bist Kurier eines Syn
 | ⬡ Tarnmodus | 6 s unsichtbar für Drohnen, Heat eingefroren |
 | ⬡ Magnet | 8 s lang wird Beute von den Nachbarfeldern angezogen |
 
+## Daily Run und Missionen
+
+- **Daily Run:** Jeden Tag eine feste Stadt, für alle gleich (nach lokalem Datum). Eigener Tagesbestwert und ein Ergebnis zum Kopieren und Teilen.
+- **Missionen:** Immer drei aktiv, z. B. „Sammle 10 Beute in einem Run“ oder „Überlebe eine Razzia“. Jede erfüllte Mission bringt einen Stern; alle 4 Sterne steigt dein Rang (Laufbursche → Kurier → Runner → Fixer → Schatten → Syndikats-Boss) und die Ziele werden härter.
+
+Fortschritt, Rekorde und Missionen werden nur im Browser auf deinem Gerät gespeichert.
+
 ## Aufbau
 
 Alles steckt in einer einzigen Datei, `index.html`: HTML, CSS und JavaScript, ohne Build-Tools und ohne externe Bilder oder Sounds. Grafik wird auf ein `<canvas>` gezeichnet, Sound mit der Web Audio API live erzeugt.

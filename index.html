@@ -59,7 +59,8 @@
   #best { font: 600 13px var(--display); color: var(--gold); letter-spacing: .12em; text-transform: uppercase;
     text-shadow: 0 0 8px rgb(249 200 14 / .6); }
   .overlay {
-    position: fixed; inset: 0; display: grid; place-content: center; gap: 12px;
+    position: fixed; inset: 0; display: flex; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding-block: calc(env(safe-area-inset-top, 0px) + 20px) calc(env(safe-area-inset-bottom, 0px) + 20px);
     text-align: center; background: radial-gradient(ellipse at center, rgb(13 2 33 / .55), rgb(13 2 33 / .9));
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     padding-right: max(16px, env(safe-area-inset-right, 0px));
@@ -72,6 +73,35 @@
   }
   .overlay p { margin: 0; color: var(--dim); max-width: 32ch; justify-self: center; }
   .overlay p b { color: var(--cyan); font-weight: 700; }
+  .panel { margin: auto; display: grid; gap: 12px; justify-items: center; width: min(100%, 420px); }
+  .btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .btn {
+    font: 700 15px var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--ink);
+    padding: 12px 20px; min-height: 46px; border-radius: 12px; cursor: pointer;
+    border: 1.5px solid var(--violet); background: rgb(13 2 33 / .7); box-shadow: 0 0 12px rgb(166 77 255 / .45);
+  }
+  .btn.primary { border-color: var(--magenta); background: rgb(255 42 109 / .18); box-shadow: 0 0 16px rgb(255 42 109 / .55); }
+  .btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+  .btn:active { transform: scale(.97); }
+  .note { color: var(--dim); font-size: 14px; }
+  .rank { font: 600 12px var(--display); letter-spacing: .2em; text-transform: uppercase; color: var(--cyan); text-shadow: 0 0 8px rgb(5 217 232 / .6); }
+  .missions { display: grid; gap: 8px; width: 100%; text-align: left; }
+  .missions h2 { margin: 4px 0 0; font: 700 12px var(--display); letter-spacing: .22em; text-transform: uppercase; color: var(--dim); }
+  .m { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 9px 12px; border-radius: 10px;
+    border: 1px solid rgb(166 77 255 / .35); background: rgb(13 2 33 / .6); }
+  .m span { min-width: 0; color: var(--ink); }
+  .m b { font: 700 13px var(--display); color: var(--dim); font-variant-numeric: tabular-nums; }
+  .m i { grid-column: 1 / -1; height: 3px; border-radius: 2px; background: rgb(166 77 255 / .2); overflow: hidden; }
+  .m i u { display: block; height: 100%; background: var(--violet); }
+  .m.done { border-color: var(--cyan); box-shadow: 0 0 10px rgb(5 217 232 / .35); }
+  .m.done b { color: var(--cyan); }
+  .m.done i u { background: var(--cyan); }
+  .howto { width: 100%; text-align: left; color: var(--dim); }
+  .howto summary { cursor: pointer; text-align: center; font: 600 13px var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--ink); padding: 6px; }
+  .howto p { margin: 8px 0; max-width: none; }
+  .share { display: grid; gap: 8px; justify-items: center; width: 100%; }
+  .share pre { box-sizing: border-box; margin: 0; width: 100%; white-space: pre-wrap; text-align: left; font: 500 14px/1.4 var(--body); color: var(--ink);
+    padding: 10px 12px; border-radius: 10px; border: 1px dashed var(--cyan); background: rgb(13 2 33 / .6); user-select: text; -webkit-user-select: text; }
   .overlay .big { color: var(--ink); font: 600 16px var(--display); letter-spacing: .14em; text-transform: uppercase;
     animation: pulse 1.4s ease-in-out infinite; }
   .tag { color: var(--magenta); font: 600 12px var(--display); letter-spacing: .3em; text-transform: uppercase;
@@ -170,22 +200,45 @@
 <div id="powers"></div>
 
 <div class="overlay" id="start">
-  <div class="tag">Syndikat-Kurier · Sektor 7</div>
-  <h1>NEON HUSTLE</h1>
-  <p><b>Tippen</b> = vorwärts · <b>Wischen</b> = links, rechts, zurück</p>
-  <p>Am Rechner: Pfeiltasten · M = Ton</p>
-  <p><b>Magnetbahn</b>: blinkt das Gleis rot, kommt gleich ein Zug. <b>Laser</b>: flackert er, schaltet er gleich ein; freie Spalten sind cyan markiert.</p>
-  <p><b>⬡ Power-ups</b>: Schild, Zeitlupe, Tarnmodus, Magnet.</p>
-  <p><b>Datenkanal</b>: auf die leuchtenden Pads springen, nicht in den Strom. <b>Safehouse</b>: hier kühlt Heat schnell ab, Drohnen kommen nicht rein.</p>
-  <p>Ohne Pause vorwärts = <b>Combo-Multiplikator</b>. Knapp an Autos vorbei = <b style="color:var(--magenta)">Bonus</b>.</p>
-  <p><b style="color:var(--gold)">◆ Beute</b> gibt Punkte, macht dich aber heiß. Mehr <b style="color:var(--magenta)">Heat</b> heißt: schnellerer Verkehr und Polizei-Drohnen. Wer untertaucht, kühlt ab.</p>
-  <p class="big">Tippen zum Starten</p>
+  <div class="panel">
+    <div class="tag">Syndikat-Kurier · Sektor 7</div>
+    <h1>NEON HUSTLE</h1>
+    <div class="rank" id="rankStart"></div>
+    <div class="btns">
+      <button id="playBtn" class="btn primary" type="button">Spielen</button>
+      <button id="dailyBtn" class="btn" type="button">Daily Run</button>
+    </div>
+    <div class="note" id="dailyInfo"></div>
+    <div class="missions" id="missionsStart"></div>
+    <details class="howto">
+      <summary>Wie spielt man?</summary>
+      <p><b>Tippen</b> = vorwärts · <b>Wischen</b> = links, rechts, zurück</p>
+      <p>Am Rechner: Pfeiltasten · M = Ton</p>
+      <p><b>Magnetbahn</b>: blinkt das Gleis rot, kommt gleich ein Zug. <b>Laser</b>: flackert er, schaltet er gleich ein; freie Spalten sind cyan markiert.</p>
+      <p><b>⬡ Power-ups</b>: Schild, Zeitlupe, Tarnmodus, Magnet.</p>
+      <p><b>Datenkanal</b>: auf die leuchtenden Pads springen, nicht in den Strom. <b>Safehouse</b>: hier kühlt Heat schnell ab, Drohnen kommen nicht rein.</p>
+      <p>Ohne Pause vorwärts = <b>Combo-Multiplikator</b>. Knapp an Autos vorbei = <b style="color:var(--magenta)">Bonus</b>.</p>
+      <p><b style="color:var(--gold)">◆ Beute</b> gibt Punkte, macht dich aber heiß. Mehr <b style="color:var(--magenta)">Heat</b> heißt: schnellerer Verkehr und Polizei-Drohnen. Wer untertaucht, kühlt ab.</p>
+    </details>
+  </div>
 </div>
 <div class="overlay" id="over" hidden>
-  <div class="tag" id="overTag">Geflasht</div>
-  <h1 id="overScore">0</h1>
-  <p id="overBest"></p>
-  <p class="big">Tippen für neue Runde</p>
+  <div class="panel">
+    <div class="tag" id="overTag">Geflasht</div>
+    <div class="note" id="overMode"></div>
+    <h1 id="overScore">0</h1>
+    <p id="overBest"></p>
+    <div class="rank" id="rankOver"></div>
+    <div class="missions" id="missionsOver"></div>
+    <div class="share" id="shareBox" hidden>
+      <pre id="shareText"></pre>
+      <button id="copyBtn" class="btn" type="button">Ergebnis kopieren</button>
+    </div>
+    <div class="btns">
+      <button id="againBtn" class="btn primary" type="button">Nochmal</button>
+      <button id="menuBtn" class="btn" type="button">Menü</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -533,6 +586,76 @@
   const EVENT_WARN = 1.6;
   let ev = null, evNext = 0, evLast = '', blackoutK = 0;
   let runs = 0, dataHintShown = false, hintLeft = 0;
+
+  // ---------- Missionen ----------
+  // Immer 3 aktiv. Erfüllt = 1 Stern; alle 4 Sterne steigt dein Rang, die Ziele werden härter.
+  const MISSIONS = [
+    { id: 'loot',     text: n => `Sammle ${n} Beute in einem Run`,            val: r => r.loot,    base: [5, 10, 15, 25] },
+    { id: 'row',      text: n => `Erreiche Reihe ${n}`,                       val: r => r.maxRow,  base: [25, 50, 80, 120] },
+    { id: 'near',     text: n => `${n} Near-Misses in einem Run`,             val: r => r.near,    base: [3, 6, 10, 15] },
+    { id: 'mult',     text: n => `Erreiche Combo ×${n}`,                      val: r => r.maxMult, base: [2, 3, 4, 5] },
+    { id: 'score',    text: n => `${n} Punkte in einem Run`,                  val: r => r.score,   base: [60, 150, 300, 500] },
+    { id: 'heat',     text: n => `Erreiche Heat ${n}`,                        val: r => r.maxHeat, base: [2, 3, 4, 5] },
+    { id: 'data',     text: n => `Überquere ${n} Datenkanal-Reihen in einem Run`, val: r => r.data, base: [3, 6, 10, 15] },
+    { id: 'razzia',   text: n => n > 1 ? `Überlebe ${n} Razzien in einem Run` : 'Überlebe eine Razzia', val: r => r.razzia, base: [1, 1, 2, 2] },
+    { id: 'blackout', text: n => n > 1 ? `Überlebe ${n} Blackouts in einem Run` : 'Überlebe einen Blackout', val: r => r.blackout, base: [1, 1, 2, 2] },
+    { id: 'powers',   text: n => `Sammle ${n} Power-ups (über alle Runs)`,    val: r => r.powers,  base: [2, 5, 10, 15], total: true },
+    { id: 'daily',    text: () => 'Spiele einen Daily Run',                    val: r => r.daily,   base: [1, 1, 1, 1], total: true }
+  ];
+  const RANKS = ['Laufbursche', 'Kurier', 'Runner', 'Fixer', 'Schatten', 'Syndikats-Boss'];
+  const STARS_PER_RANK = 4;
+  let ms = { stars: 0, active: [] }, run = {}, runEnded = false;
+  try { const m = JSON.parse(localStorage.getItem('nh-missions')); if (m && Array.isArray(m.active)) ms = m; } catch (e) {}
+  const mdef = id => MISSIONS.find(m => m.id === id);
+  const rankIdx = () => Math.min(RANKS.length - 1, Math.floor(ms.stars / STARS_PER_RANK));
+  function saveMissions() { try { localStorage.setItem('nh-missions', JSON.stringify(ms)); } catch (e) {} }
+  function fillMissions() {
+    ms.active = ms.active.filter(a => mdef(a.id) && !a.done);
+    while (ms.active.length < 3) {
+      const taken = ms.active.map(a => a.id);
+      const pool = MISSIONS.filter(m => !taken.includes(m.id));
+      const m = pool[Math.floor(Math.random() * pool.length)];
+      ms.active.push({ id: m.id, target: m.base[Math.min(3, rankIdx())], prog: 0, done: false });
+    }
+    saveMissions();
+  }
+  function missionValue(a) {
+    const M = mdef(a.id);
+    if (M.total) return a.prog + (runEnded ? 0 : (M.val(run) || 0));
+    return M.val(run) || 0;
+  }
+  function checkMissions() {
+    run.maxRow = player.maxRow; run.score = score; run.loot = loot;
+    run.maxMult = Math.max(run.maxMult, mult); run.maxHeat = Math.max(run.maxHeat, Math.floor(heat));
+    for (const a of ms.active) {
+      if (a.done || missionValue(a) < a.target) continue;
+      const before = rankIdx();
+      a.done = true; ms.stars++; saveMissions();
+      popup(player.col + .5, player.row + 1.8, '★ MISSION ERFÜLLT', P.cyan);
+      Sound.sting('win');
+      if (rankIdx() > before) popup(player.col + .5, player.row + 2.6, 'NEUER RANG: ' + RANKS[rankIdx()].toUpperCase(), P.gold);
+    }
+  }
+  function rankText() {
+    const into = ms.stars - rankIdx() * STARS_PER_RANK;
+    const last = rankIdx() === RANKS.length - 1;
+    return `Rang: ${RANKS[rankIdx()]} · ★ ${ms.stars}` + (last ? '' : ` · noch ${STARS_PER_RANK - into} bis ${RANKS[rankIdx() + 1]}`);
+  }
+  function renderMissions(el, title) {
+    el.innerHTML = `<h2>${title}</h2>` + ms.active.map(a => {
+      const M = mdef(a.id), v = a.done ? a.target : Math.min(a.target, missionValue(a));
+      return `<div class="m${a.done ? ' done' : ''}"><span>${a.done ? '✔ ' : ''}${M.text(a.target)}</span><b>${v}/${a.target}</b><i><u style="width:${100 * v / a.target}%"></u></i></div>`;
+    }).join('');
+  }
+  function showStart() {
+    fillMissions();
+    document.getElementById('rankStart').textContent = rankText();
+    document.getElementById('dailyInfo').textContent = `Daily Run ${dayKey}: dieselbe Stadt für alle, heute. Dein Bestwert: ${dailyBest}`;
+    renderMissions(document.getElementById('missionsStart'), 'Missionen');
+    document.getElementById('over').hidden = true;
+    document.getElementById('start').hidden = false;
+    state = 'menu';
+  }
   try { runs = +localStorage.getItem('nh-runs') || 0; } catch (e) {}
   // ---------- Power-ups ----------
   const POWERS = {
@@ -555,15 +678,36 @@
   let best = 0;
   try { best = +localStorage.getItem('nh-best') || 0; } catch (e) {}
 
-  const rand = (a, b) => a + Math.random() * (b - a);
-  const pick = a => a[Math.floor(Math.random() * a.length)];
+  // Zufall: normal Math.random; beim Erzeugen einer Reihe ein fester Zufall aus Seed + Reihennummer.
+  // So bekommt im Daily Run jede:r am selben Tag exakt dieselbe Stadt.
+  let rnd = Math.random;
+  const rand = (a, b) => a + rnd() * (b - a);
+  const pick = a => a[Math.floor(rnd() * a.length)];
+  function hashStr(str) {
+    let h = 1779033703 ^ str.length;
+    for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = h << 13 | h >>> 19; }
+    return h >>> 0;
+  }
+  function mulberry32(a) {
+    return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  }
+  const today = new Date();
+  const dayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  let mode = 'normal', runSeed = String(Math.random()), genMax = -7;
+  let dailyBest = 0;
+  try { dailyBest = +localStorage.getItem('nh-daily-' + dayKey) || 0; } catch (e) {}
 
   function makeRow(i) {
+    rnd = mulberry32(hashStr(runSeed + ':' + i));
+    try { return makeRowInner(i); } finally { rnd = Math.random; }
+  }
+  function makeRowInner(i) {
     const r = makeRowBase(i);
-    r.loot = i >= 4 && r.type !== 'data' && r.type !== 'rail' && !r.safehouse && Math.random() < .2 ? Math.floor(Math.random() * COLS) : -1;
+    r.loot = i >= 4 && r.type !== 'data' && r.type !== 'rail' && !r.safehouse && rnd() < .2 ? Math.floor(rnd() * COLS) : -1;
     r.power = null;
-    if (i >= 8 && r.type !== 'data' && r.type !== 'rail' && !r.safehouse && Math.random() < POWER_CHANCE) {
-      let c = Math.floor(Math.random() * COLS);
+    if (i >= 8 && r.type !== 'data' && r.type !== 'rail' && !r.safehouse && rnd() < POWER_CHANCE) {
+      let c = Math.floor(rnd() * COLS);
       if (c === r.loot) c = (c + 3) % COLS;
       r.power = { col: c, type: pick(Object.keys(POWERS)) };
     }
@@ -571,7 +715,7 @@
   }
   function makeData(i, prev) {
     const level = Math.min(i / 160, 1);
-    const dir = prev.type === 'data' ? -prev.dir : (Math.random() < .5 ? 1 : -1);
+    const dir = prev.type === 'data' ? -prev.dir : (rnd() < .5 ? 1 : -1);
     const speed = rand(.9, 1.5) + level * 1.1;
     const plats = [];
     let x = rand(0, 1.5);
@@ -592,40 +736,40 @@
   }
   function makeRowBase(i) {
     const decor = [];
-    const n = Math.random() < .7 ? 1 + Math.floor(Math.random() * 2) : 0;
-    for (let k = 0; k < n; k++) decor.push({ x: rand(0, COLS - 1.5), len: rand(.6, 1.6), color: pick([P.magenta, P.cyan, P.violet, P.blue, P.magenta]), ph: rand(0, 6.28), top: Math.random() < .5 });
+    const n = rnd() < .7 ? 1 + Math.floor(rnd() * 2) : 0;
+    for (let k = 0; k < n; k++) decor.push({ x: rand(0, COLS - 1.5), len: rand(.6, 1.6), color: pick([P.magenta, P.cyan, P.violet, P.blue, P.magenta]), ph: rand(0, 6.28), top: rnd() < .5 });
     if (i < 3) return { type: 'safe', decor };
     const prev = rows.get(i - 1);
     // Safehouse: frühestens ab Reihe 15, dann etwa alle 22–40 Reihen
-    if (i >= 15 && i - lastSafehouse >= 22 && Math.random() < .25) {
+    if (i >= 15 && i - lastSafehouse >= 22 && rnd() < .25) {
       lastSafehouse = i;
       return { type: 'safe', safehouse: true, decor: [] };
     }
     // Datenkanal: ab Reihe 6, Blöcke aus 1–3 Reihen
     if (i >= 6 && prev && !prev.safehouse &&
-        ((prev.type === 'data' && prev.run < 3 && Math.random() < .55) ||
-         (prev.type !== 'data' && Math.random() < .16))) {
+        ((prev.type === 'data' && prev.run < 3 && rnd() < .55) ||
+         (prev.type !== 'data' && rnd() < .16))) {
       return makeData(i, prev);
     }
     const roadChance = prev && prev.type === 'safe' ? 0.8 : 0.62;
     // Magnetbahn: ab Reihe 10, nie zwei Gleise direkt hintereinander
-    if (i >= 10 && prev && prev.type !== 'rail' && Math.random() < .08) {
-      return { type: 'rail', dir: Math.random() < .5 ? 1 : -1, len: 10, speed: 15, phase: 'idle', wait: rand(1, 4), warnT: 0, tx: 0, decor: [] };
+    if (i >= 10 && prev && prev.type !== 'rail' && rnd() < .08) {
+      return { type: 'rail', dir: rnd() < .5 ? 1 : -1, len: 10, speed: 15, phase: 'idle', wait: rand(1, 4), warnT: 0, tx: 0, decor: [] };
     }
-    if (Math.random() > roadChance) {
+    if (rnd() > roadChance) {
       const r = { type: 'safe', decor };
       // Laser-Gitter: ab Reihe 14 in manchen Gassen; 1–2 Spalten bleiben immer frei
-      if (i >= 14 && Math.random() < .14) {
-        const g1 = Math.floor(Math.random() * COLS);
-        r.laser = { t: rand(0, LASER.cycle), gaps: Math.random() < .5 ? [g1] : [g1, (g1 + 4) % COLS] };
+      if (i >= 14 && rnd() < .14) {
+        const g1 = Math.floor(rnd() * COLS);
+        r.laser = { t: rand(0, LASER.cycle), gaps: rnd() < .5 ? [g1] : [g1, (g1 + 4) % COLS] };
       }
       return r;
     }
     const level = Math.min(i / 220, 1);           // wird mit der Zeit schneller (langsamer Anstieg)
-    const dir = Math.random() < 0.5 ? -1 : 1;
+    const dir = rnd() < 0.5 ? -1 : 1;
     let speed = rand(1.0, 1.9) + level * 1.7;      // Zellen pro Sekunde
     // Laster: selten, nie zwei Laster-Spuren direkt hintereinander, und langsamer als Autos
-    const isTruck = i > 10 && !(prev && prev.truck) && Math.random() < 0.08;
+    const isTruck = i > 10 && !(prev && prev.truck) && rnd() < 0.08;
     if (isTruck) speed *= .75;
     const span = COLS + 8;                          // Spurlänge inkl. Rand
     const cars = [];
@@ -639,12 +783,16 @@
     return { type: 'road', dir, speed, cars, span, truck: isTruck, color };
   }
   function getRow(i) {
-    if (!rows.has(i)) rows.set(i, makeRow(i));
+    // Reihen immer der Reihe nach erzeugen, damit der Daily Run für alle gleich ist
+    while (genMax < i) { genMax++; rows.set(genMax, makeRow(genMax)); }
+    if (!rows.has(i)) rows.set(i, { type: 'safe', decor: [], loot: -1, power: null });
     return rows.get(i);
   }
 
   function reset() {
-    rows = new Map(); lastSafehouse = 0; inSafehouse = false;
+    runEnded = false;
+    rows = new Map(); genMax = -7; lastSafehouse = 0; inSafehouse = false;
+    run = { loot: 0, maxRow: 0, near: 0, maxMult: 1, score: 0, maxHeat: 0, data: 0, razzia: 0, blackout: 0, powers: 0, daily: mode === 'daily' ? 1 : 0 };
     for (let i = -6; i < 30; i++) getRow(i);
     player = { col: 4, row: 0, fromCol: 4, fromRow: 0, hopT: 1, queued: null, maxRow: 0 };
     camRow = -2;
@@ -678,6 +826,7 @@
     player.fromCol = player.col; player.fromRow = player.row;
     player.col = nc; player.row = nr; player.hopT = 0; hopId++;
     if (nr > player.maxRow) {
+      if (getRow(nr).type === 'data') run.data++;
       player.maxRow = nr;
       combo++; comboTimer = COMBO_WINDOW;
       const m = Math.min(5, 1 + Math.floor(combo / 6));
@@ -712,7 +861,7 @@
   });
   window.addEventListener('pointercancel', () => { down = false; });
   window.addEventListener('pointerup', () => {
-    if (state !== 'play') return handleOverlayTap();
+    if (state !== 'play') return;
     if (down && !swiped) move(0, 1);
     down = false;
   });
@@ -730,8 +879,10 @@
   window.addEventListener('keydown', e => { if (e.code === 'KeyM') { Sound.init(); Sound.toggleMute(); syncMute(); } });
   syncMute();
 
-  function handleOverlayTap() {
+  function handleOverlayTap(newMode) {
     if (state === 'dead' && performance.now() - deadAt < 600) return; // kein versehentlicher Neustart
+    if (newMode) mode = newMode;
+    runSeed = mode === 'daily' ? 'daily-' + dayKey : String(Math.random());
     Sound.init(); Sound.duck(false);
     runs++; try { localStorage.setItem('nh-runs', runs); } catch (e) {}
     reset();
@@ -753,7 +904,7 @@
         const right = cx >= b, gap = right ? cx - b : a - (cx + c.w);
         if (gap < 0 || gap > .35) continue;
         if (away && (right ? r.dir < 0 : r.dir > 0)) continue;
-        nmHop = hopId;
+        nmHop = hopId; run.near++;
         points += 2 * mult; score = points; updateHud();
         comboTimer = COMBO_WINDOW; updateCombo();
         popup(px + .5, row + 1, 'KNAPP! +' + 2 * mult, P.magenta);
@@ -804,7 +955,9 @@
   }
   function endEvent(silent) {
     if (!ev) return;
+    if (!silent && ev.type === 'blackout') run.blackout++;
     if (!silent && ev.type === 'razzia') {
+      run.razzia++;
       const bonus = 15 * mult;
       points += bonus; score = points; updateHud();
       popup(player.col + .5, player.row + 1.5, 'RAZZIA ÜBERLEBT +' + bonus, P.violet);
@@ -818,7 +971,7 @@
 
   function grabPower(type, c, r) {
     const P0 = POWERS[type];
-    pw[type] = type === 'shield' ? 1 : P0.dur;
+    pw[type] = type === 'shield' ? 1 : P0.dur; run.powers++;
     popup(c + .5, r + 1, P0.name.toUpperCase(), P0.color);
     burst(c + .5, r, 22, [P0.color, '#ffffff'], 2.8, .6);
     Sound.power();
@@ -862,7 +1015,7 @@
   function updateHud() {
     document.getElementById('loot').textContent = '◆ ' + loot;
     document.getElementById('score').textContent = score;
-    document.getElementById('best').textContent = 'Best ' + Math.max(best, score);
+    document.getElementById('best').textContent = (mode === 'daily' ? 'Daily ' : 'Best ') + Math.max(mode === 'daily' ? dailyBest : best, score);
   }
 
   function die(why) {
@@ -889,12 +1042,33 @@
     burst(player.fromCol + (player.col - player.fromCol) * t + .5, player.row + .5, 40, [P.magenta, P.violet, P.cyan, P.blue, '#ffffff'], 4, .9);
     shake = reduceMotion ? 0 : 0.35; glitch = reduceMotion ? 0 : 0.4;
     if (navigator.vibrate) navigator.vibrate([40, 30, 60]);
-    if (score > best) { best = score; try { localStorage.setItem('nh-best', best); } catch (e) {} }
+    checkMissions();
+    const prevBest = mode === 'daily' ? dailyBest : best;
+    if (mode === 'daily') { if (score > dailyBest) { dailyBest = score; try { localStorage.setItem('nh-daily-' + dayKey, dailyBest); } catch (e) {} } }
+    else if (score > best) { best = score; try { localStorage.setItem('nh-best', best); } catch (e) {} }
+    // Fortschritt von Sammel-Missionen über Runs hinweg mitnehmen
+    for (const a of ms.active) { const M = mdef(a.id); if (M.total && !a.done) a.prog += M.val(run) || 0; }
+    runEnded = true;                                // Sammel-Missionen zählen ab jetzt nur noch den gespeicherten Fortschritt
+    const shownRun = run;
+    saveMissions();
     setTimeout(() => {
       document.getElementById('overTag').textContent = cause === 'drone' ? 'Von Drohne gescannt' : cause === 'data' ? 'Im Datenstrom gelöscht' : cause === 'rail' ? 'Von der Magnetbahn erfasst' : cause === 'laser' ? 'Vom Laser gegrillt' : 'Geflasht';
       document.getElementById('overScore').textContent = score;
-      document.getElementById('overBest').textContent = `◆ ${loot} Beute · ` + (score >= best && score > 0 ? 'Neuer Rekord' : 'Rekord: ' + best);
+      const rec = score > prevBest && score > 0;
+      document.getElementById('overBest').textContent = `◆ ${loot} Beute · Reihe ${player.maxRow} · ` + (rec ? 'Neuer Rekord' : 'Rekord: ' + Math.max(prevBest, score));
+      document.getElementById('overMode').textContent = mode === 'daily' ? `Daily Run ${dayKey}` : '';
+      document.getElementById('rankOver').textContent = rankText();
+      renderMissions(document.getElementById('missionsOver'), 'Missionen');
+      const box = document.getElementById('shareBox');
+      box.hidden = mode !== 'daily';
+      if (mode === 'daily') {
+        const h = shownRun.maxHeat || 0;
+        document.getElementById('shareText').textContent =
+          `NEON HUSTLE · Daily ${dayKey}\n⚡ ${score} Punkte · Reihe ${player.maxRow} · ◆ ${loot}\nHeat ${'▰'.repeat(h)}${'▱'.repeat(5 - h)} · Combo ×${shownRun.maxMult || 1}`;
+        document.getElementById('copyBtn').textContent = 'Ergebnis kopieren';
+      }
       document.getElementById('over').hidden = false;
+      fillMissions();                                 // erfüllte Missionen werden für die nächste Runde ersetzt
     }, 450);
   }
 
@@ -998,6 +1172,7 @@
       } else droneTimer = Math.max(droneTimer, 2);
       updateHeatHud();
       Sound.setIntensity(level);
+      checkMissions();
       if (combo > 0) {
         comboTimer -= dt;
         comboBar.style.transform = `scaleX(${Math.max(0, comboTimer / COMBO_WINDOW)})`;
@@ -1366,8 +1541,20 @@
 
   state = 'menu';
   reset();
-  document.getElementById('start').addEventListener('pointerup', e => { e.stopPropagation(); handleOverlayTap(); });
-  document.getElementById('over').addEventListener('pointerup', e => { e.stopPropagation(); handleOverlayTap(); });
+  showStart();
+  document.getElementById('playBtn').addEventListener('click', () => handleOverlayTap('normal'));
+  document.getElementById('dailyBtn').addEventListener('click', () => handleOverlayTap('daily'));
+  document.getElementById('againBtn').addEventListener('click', () => handleOverlayTap());
+  document.getElementById('menuBtn').addEventListener('click', () => { if (performance.now() - deadAt > 600) showStart(); });
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    const text = document.getElementById('shareText').textContent, btn = document.getElementById('copyBtn');
+    const fallback = () => {                          // Kopieren verweigert: Text markieren, dann selbst kopieren
+      const range = document.createRange(); range.selectNodeContents(document.getElementById('shareText'));
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+      btn.textContent = 'Markiert – jetzt kopieren';
+    };
+    try { navigator.clipboard.writeText(text).then(() => { btn.textContent = 'Kopiert'; }, fallback); } catch (e) { fallback(); }
+  });
   requestAnimationFrame(frame);
 })();
 </script>

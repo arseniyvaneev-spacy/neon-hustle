@@ -33,10 +33,12 @@
 - Events (ab Reihe 12, etwa alle 20–30 s): Blackout, Rush Hour, Razzia
 - Power-ups (ab Reihe 8, auf ca. 6 % der Reihen): EMP-Schild, Zeitlupe, Tarnmodus, Magnet
 
+- Daily Run (feste Stadt pro Tag per Seed) mit teilbarem Ergebnis
+- Missionen mit Sternen und 6 Rängen
+
 ## Roadmap
 
-1. **Langzeitmotivation:** Daily Run (gleiche Karte für alle), Missionen
-2. **Später / nur wenn Zeit:** Outfits mit Beute kaufen, Boss (Polizei-Mech)
-3. **Veröffentlichung:** als PWA auf den Home-Bildschirm; App Store nur mit Mac und Developer-Account
+1. **Später / nur wenn Zeit:** Outfits mit Beute kaufen, Boss (Polizei-Mech)
+2. **Veröffentlichung:** als PWA auf den Home-Bildschirm; App Store nur mit Mac und Developer-Account
 
 **Nicht vor Version 1:** Shop, Skins, mehrere Charaktere.
