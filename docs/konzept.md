@@ -34,10 +34,16 @@
 - Power-ups (ab Reihe 8, auf ca. 6 % der Reihen): EMP-Schild, Zeitlupe, Tarnmodus, Magnet
 - Daily Run (feste Stadt pro Tag per Seed) mit teilbarem Ergebnis
 - Missionen mit Sternen und 6 Rängen
+- Bestenliste (lokal): Top 10 für Standard und Daily getrennt, mit Datum und Bezirk
+- Garderobe: vier Outfits (Syndikat-Kurier, Neonläufer, Nachtgeist, Pulse-Rider), freigeschaltet bei 0/4/8/12 Sternen; ändern nur die Farben
+- Bezirke: Sektor 7, Hafen 9, Neon-Basar, Kuppelstadt, Untergrund, freigeschaltet über den Rang (0–4); eigene Palette und Reihen-Mischung (`DISTRICTS`), Steuerung und Punkte gleich. Der Daily Run spielt immer in Sektor 7.
 
 ## Roadmap
 
-1. **Später / nur wenn Zeit:** Outfits mit Beute kaufen, Boss (Polizei-Mech)
-2. **Veröffentlichung:** als PWA auf den Home-Bildschirm; App Store nur mit Mac und Developer-Account
+1. **Zwei Bezirke über dem höchsten Rang:** Skydeck (schnelle Magnetbahnen, lange Datenkanal-Blöcke) und Spiegelbezirk (gleichmäßiger, sehr dichter Verkehr), je mit eigener Palette, Mischung und Freischaltung.
+2. **Signature-Events pro Bezirk:** z. B. Nebel im Hafen (eingeschränkte Sicht), Goldrausch im Basar (Beute dreifach), eingebaut in den Event-Ablauf mit Banner und Countdown.
+3. **Abzeichen-Schrank:** eigener Screen mit Kacheln je Bezirk und den erreichten Rängen; gesperrte Kacheln abgedunkelt mit Rang-Anforderung.
+4. **Später / nur wenn Zeit:** Outfits mit Beute kaufen, Boss (Polizei-Mech).
+5. **Veröffentlichung:** GitHub Pages einschalten (siehe README); App Store nur mit Mac und Developer-Account.
 
 **Nicht vor Version 1:** Shop, Skins, mehrere Charaktere.
