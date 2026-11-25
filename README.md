@@ -40,7 +40,11 @@ Ein Endless-Hopper im Neon-Cyberpunk-Look fürs iPhone. Du bist Kurier eines Syn
 - **Daily Run:** Jeden Tag eine feste Stadt, für alle gleich (nach lokalem Datum). Eigener Tagesbestwert und ein Ergebnis zum Kopieren und Teilen.
 - **Missionen:** Immer drei aktiv, z. B. „Sammle 10 Beute in einem Run“ oder „Überlebe eine Razzia“. Jede erfüllte Mission bringt einen Stern; alle 4 Sterne steigt dein Rang (Laufbursche → Kurier → Runner → Fixer → Schatten → Syndikats-Boss) und die Ziele werden härter.
 
-Fortschritt, Rekorde und Missionen werden nur im Browser auf deinem Gerät gespeichert.
+- **Bestenliste:** die zehn besten Läufe, Standard und Daily getrennt, mit Datum und Bezirk (Startmenü → „Bestenliste“).
+- **Garderobe:** vier Outfits, freigeschaltet bei 0, 4, 8 und 12 Sternen; sie ändern nur die Farben deiner Figur.
+- **Bezirke:** Sektor 7, Hafen 9, Neon-Basar, Kuppelstadt und Untergrund, freigeschaltet über deinen Rang. Jeder hat eigene Farben und eine eigene Mischung aus Straßen, Kanälen, Bahnen, Lasern und Safehouses. Der Daily Run läuft immer in Sektor 7.
+
+Fortschritt, Rekorde, Missionen, Outfit und Bezirk werden nur im Browser auf deinem Gerät gespeichert.
 
 ## Aufbau
 
