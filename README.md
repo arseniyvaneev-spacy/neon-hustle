@@ -36,6 +36,10 @@ Ein Endless-Hopper im Neon-Cyberpunk-Look fürs iPhone. Du bist Kurier eines Syn
 | ⬡ Tarnmodus | 6 s unsichtbar für Drohnen, Heat eingefroren |
 | ⬡ Magnet | 8 s lang wird Beute von den Nachbarfeldern angezogen |
 
+## Intro
+
+Jede Runde beginnt mit einer kurzen Nahaufnahme (≈1,5 s): Kurier 7 schiebt die Sonnenbrille auf die Augen, die Gläser leuchten in der Visier-Farbe des Outfits auf, dann zoomt die Kamera zurück ins Spiel. Antippen oder eine Taste überspringt das Intro. Einstellbar über `INTRO`.
+
 ## Story: Die Spiegelkönigin
 
 Du bist Kurier Nr. 7, ohne Erinnerung, mit einem versiegelten Paket – und du weißt nur, dass du rennen musst. Eine Stimme namens SPIEGEL sieht dich durch jede Kamera der Stadt; eine andere, Eins, hilft dir. Meistens.
