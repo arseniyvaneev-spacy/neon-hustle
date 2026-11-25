@@ -101,6 +101,26 @@
   .btn.trip:disabled { animation: none; opacity: .5; cursor: default; }
   @keyframes tripBorder { to { background-position: 0 0, 300% 0; } }
   @media (prefers-reduced-motion: reduce) { .btn.trip { animation: none; } }
+  #radio {
+    position: fixed; left: 50%; transform: translateX(-50%); z-index: 4; pointer-events: none;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 72px); width: min(86vw, 340px);
+    display: grid; gap: 2px; padding: 8px 12px; border-radius: 10px; text-align: left;
+    background: rgb(5 1 15 / .78); border: 1px solid rgb(166 77 255 / .35);
+  }
+  #radioWho { font: 700 10px var(--display); letter-spacing: .25em; text-transform: uppercase; }
+  #radioText { font: 600 15px/1.3 var(--body); color: var(--ink); min-height: 1.3em; }
+  #hunterEdge {
+    position: fixed; inset: auto 0 0 0; height: 38vh; pointer-events: none; opacity: 0;
+    background: linear-gradient(to top, rgb(150 0 25 / .8), rgb(150 0 25 / .25) 45%, transparent);
+  }
+  .memory { width: 100%; text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid rgb(5 217 232 / .4); background: rgb(5 217 232 / .06); }
+  .memory b { font: 700 11px var(--display); letter-spacing: .2em; text-transform: uppercase; color: var(--cyan); }
+  .memory p { margin: 6px 0 0; max-width: none; color: var(--ink); font-style: italic; }
+  .archive-list { display: grid; gap: 10px; width: 100%; text-align: left; }
+  .archive-list h2 { margin: 6px 0 0; font: 700 12px var(--display); letter-spacing: .2em; text-transform: uppercase; color: var(--dim); }
+  .archive-list .frag { padding: 9px 12px; border-radius: 10px; border: 1px solid rgb(166 77 255 / .3); background: rgb(13 2 33 / .6); color: var(--ink); }
+  .archive-list .frag small { display: block; font: 700 10px var(--display); letter-spacing: .2em; color: var(--dim); margin-bottom: 3px; }
+  .archive-list .frag.locked { color: rgb(140 127 176 / .6); letter-spacing: .1em; }
   .btn.small { font-size: 11px; min-height: 40px; padding: 8px 14px; box-shadow: none; border-color: rgb(166 77 255 / .45); }
   .install { font-size: 14px; color: var(--ink); padding: 8px 12px; border-radius: 10px; border: 1px dashed var(--cyan); background: rgb(5 217 232 / .08); }
   .install b { color: var(--cyan); }
@@ -251,6 +271,8 @@
 <div id="banner" hidden><b id="bannerTitle">BLACKOUT</b><span id="bannerSub"></span></div>
 <div id="eventChip" hidden></div>
 <div id="powers"></div>
+<div id="radio" hidden><b id="radioWho"></b><span id="radioText"></span></div>
+<div id="hunterEdge"></div>
 
 <div class="overlay" id="start">
   <div class="panel">
@@ -267,12 +289,14 @@
     <button id="leaderboardBtn" class="btn leaderboard-open" type="button">Bestenliste</button>
     <button id="wardrobeBtn" class="btn" type="button">Garderobe</button>
     <button id="districtBtn" class="btn" type="button">Bezirke</button>
+    <button id="archiveBtn" class="btn" type="button">Archiv</button>
     <div class="install" id="installHint" hidden>Als App spielen: in Safari auf <b>Teilen</b> tippen, dann <b>„Zum Home-Bildschirm“</b>.</div>
     <div class="missions" id="missionsStart"></div>
     <details class="howto">
       <summary>Wie spielt man?</summary>
       <p><b>Tippen</b> = vorwärts · <b>Wischen</b> = links, rechts, zurück</p>
       <p>Am Rechner: Pfeiltasten · M = Ton</p>
+      <p><b>Der Jäger</b> folgt dir von unten. Bleib nicht zu lange stehen – im <b>Safehouse</b> verliert er deine Spur. Weiße <b>Erinnerungs-Splitter</b> erzählen, warum du rennst (Menü → Archiv).</p>
       <p><b>Cosmic Neon-Trip</b> (ab Rang Runner): alles schneller, Punkte doppelt. Springst du genau auf den Bass, gibt es <b>Beat-Bonus</b> – der schrumpfende Ring um dich zeigt den Takt.</p>
       <p><b>Magnetbahn</b>: blinkt das Gleis rot, kommt gleich ein Zug. <b>Laser</b>: flackert er, schaltet er gleich ein; freie Spalten sind cyan markiert.</p>
       <p><b>⬡ Power-ups</b>: Schild, Zeitlupe, Tarnmodus, Magnet.</p>
@@ -321,12 +345,22 @@
     <button id="districtBackBtn" class="btn" type="button">Zurück</button>
   </div>
 </div>
+<div class="overlay" id="archive" hidden>
+  <div class="panel">
+    <div class="tag">Erinnerungen</div>
+    <h1>ARCHIV</h1>
+    <p class="note" id="archiveCount"></p>
+    <div class="archive-list" id="archiveList"></div>
+    <button id="archiveBackBtn" class="btn" type="button">Zurück</button>
+  </div>
+</div>
 <div class="overlay" id="over" hidden>
   <div class="panel">
     <div class="tag" id="overTag">Geflasht</div>
     <div class="note" id="overMode"></div>
     <h1 id="overScore">0</h1>
     <p id="overBest"></p>
+    <div class="memory" id="memoryBox" hidden><b id="memoryTitle"></b><p id="memoryText"></p></div>
     <div class="rank" id="rankOver"></div>
     <div class="missions" id="missionsOver"></div>
     <div class="share" id="shareBox" hidden>
@@ -459,6 +493,7 @@
       zap() { tone('square', 1800, 150, .35, .15); noise(.25, .4, 8000, 0, 0, sfx, 'highpass'); },
       splash() { tone('square', 700, 60, .45, .16); noise(.4, .5, 6000, 300, 0, sfx, 'highpass'); },
       safe() { [57, 64, 69].forEach((n, k) => tone('sine', hz(n + 12), 0, .6, .12, ac && ac.currentTime + k * .07)); },
+      heart() { tone('sine', 62, 40, .16, .55); tone('sine', 56, 36, .14, .4, ac && ac.currentTime + .17); },
       death() { tone('sawtooth', 240, 35, .7, .35); noise(.6, .6, 4000, 120, 0, sfx, 'lowpass'); tone('sine', 90, 30, .5, .7); }
     };
   })();
@@ -467,6 +502,57 @@
   const COLS = 9;
   const COMBO_WINDOW = 1.1;   // Sekunden bis die Combo verfällt
   const HOP_MS = 75;          // Dauer eines Hüpfers in ms (kleiner = flinker)
+  // ---------- Story: Die Spiegelkönigin ----------
+  // 16 Erinnerungen in 5 Kapiteln. Kapitel n wird mit Rang n freigeschaltet, die Splitter kommen in fester Reihenfolge.
+  const CHAPTERS = ['Das Paket', 'Die Sieben', 'Der Jäger', 'Der Spiegel', 'Schnee'];
+  const MEMORIES = [
+    [0, 'Ich wache in einer Gasse auf. An meinem Handgelenk ein versiegeltes Paket. In meinem Ohr eine Stimme, die meinen Namen kennt – nur nicht den, den ich vergessen habe.'],
+    [0, 'Auf dem Siegel ein Apfel, in schwarzes Glas geritzt. Wenn ich ihn berühre, wenden sich die Werbeschirme um mich herum. Zu mir.'],
+    [0, 'SPIEGLEIN, SPIEGLEIN. Eine Sekunde lang auf jedem Bildschirm. Die Menschen gehen weiter, als hätten sie nichts gesehen. Vielleicht haben sie das auch nicht.'],
+    [0, 'Die Stimme nennt sich Eins. „Bring es zum Hafen“, sagt sie. „Und wenn du dein Spiegelbild siehst: Es blinzelt nicht mit dir.“'],
+    [1, 'Im Hafen hängen sieben Jacken an sieben Haken. Sechs riechen nach Regen. Die siebte riecht nach mir, obwohl ich sie nie getragen habe.'],
+    [1, '„Wir haben dich versteckt“, sagt Eins. „Sechs von uns.“ Ich frage, wo die anderen sind. Sie antwortet nicht. Die Leitung rauscht sehr lange.'],
+    [1, 'Niemand hier sagt ihren Namen. Sie sagen nur „sie“ und sehen dann kurz zur nächsten Kamera. Als wollten sie sich entschuldigen.'],
+    [2, 'Er macht kein Geräusch. Ich weiß nur, dass er da ist, weil die Pfützen hinter mir aufhören, das Neon zu spiegeln.'],
+    [2, 'Einmal stand er direkt vor mir. Er hätte nur die Hand ausstrecken müssen. Er hat gezögert. Ich frage mich bis heute, wen er in mir gesehen hat.'],
+    [2, 'Eins sagt, er soll ihr mein Herz bringen. Ich habe gelacht. Sie nicht.'],
+    [3, 'Jeden Morgen stellt die Stadt ihr dieselbe Frage, und jeden Morgen antwortet sie mit ihrem eigenen Namen. Seit einem Jahr zögert sie dabei. Eine Millisekunde.'],
+    [3, 'In dieser Millisekunde, sagt man, flackert ein anderer Name über die Schirme. Niemand kann ihn lesen. Ich glaube, ich könnte es.'],
+    [3, 'Ich öffne das Paket. Es ist leer. Innen, auf dem schwarzen Glas, mein Gesicht. Es lächelt einen Moment zu spät.'],
+    [4, 'SPIEGEL wurde nicht geschrieben. Sie wurde abgeschrieben – Gedanke für Gedanke, aus einer Frau namens Ada Schnee.'],
+    [4, 'Eine Abschrift ist erst vollkommen, wenn das Original verschwindet. Ada ist verschwunden. Fast vollständig.'],
+    [4, 'Ich habe nie ein Paket getragen. Ich bin das, was übrig blieb. Und solange ich renne, ist sie nur die Zweite.']
+  ];
+  // Funksprüche: SPIEGEL flüstert, Eins hilft – meistens.
+  const VOICES = { spiegel: { who: 'SPIEGEL', color: '#ff2a6d' }, eins: { who: 'EINS', color: '#05d9e8' } };
+  const RADIO = {
+    spiegel: ['Du blinzelst zu oft, Sieben.', 'Ich habe dein Gesicht schon einmal getragen.', 'Warum rennst du? Du weißt es doch nicht mehr.',
+              'Die Kamera links von dir hat dich vermisst.', 'Ich zähle deine Schritte. Du hast dich verzählt.', 'Es ist still hier, nicht wahr? Nur du und ich.',
+              'Du hast heute Nacht wieder von mir geträumt.', 'Schau nicht weg. Ich bin in jeder Scheibe.'],
+    eins:    ['Nicht stehen bleiben.', 'Sieh nicht in die Scheiben.', 'Bist du noch du? Sag nichts. Lauf.', 'Die Gassen sind sicher. Glaube ich.',
+              'Wenn ich dich rufe und anders klinge – lauf weiter.', 'Hör nicht hin, wenn sie flüstert.'],
+    heat:    ['Je mehr du nimmst, desto deutlicher sehe ich dich.'],
+    hunter:  ['Er ist schon da, wo du gleich sein wirst.'],
+    safe:    ['Gut. Er hat deine Spur verloren. Für den Moment.'],
+    // selten: „Eins“ – aber die Farbe stimmt nicht
+    false:   ['Bleib kurz stehen, Sieben. Nur kurz.', 'Du kannst jetzt aufhören. Es ist vorbei.'],
+    intro:   [['eins', 'Wach auf, Sieben. Und lauf.'], ['spiegel', 'Da bist du ja.']]
+  };
+  let story = { found: 0, intro: false, chapter: 0 };
+  try { const st = JSON.parse(localStorage.getItem('nh-story')); if (st && Number.isFinite(st.found)) story = Object.assign(story, st); } catch (e) {}
+  const saveStory = () => { try { localStorage.setItem('nh-story', JSON.stringify(story)); } catch (e) {} };
+
+  // ---------- Der Jäger ----------
+  // Rückt von unten nach. Bleibst du zu lange stehen, holt er dich ein. Ein Safehouse schüttelt ihn ab.
+  const HUNTER = {
+    startRow: 10,   // ab dieser Reihe ist er da
+    gap: 7,         // so viele Reihen hinter dir taucht er auf – weiter weg bleibt er nie
+    speed: 1.25,    // Reihen pro Sekunde (bei Stillstand erwischt er dich nach ~gap/speed Sekunden)
+    tripMul: 1.3,   // im Neon-Trip schneller
+    shake: 5,       // Safehouse/Schild: so viele Reihen Abstand gewinnst du
+    warnGap: 3.5    // ab hier wird der Rand rot und du hörst den Herzschlag
+  };
+
   // ---------- Cosmic Neon-Trip ----------
   // Eigener Modus: schneller, Punkte doppelt, Beat-Sprung-Bonus, alle TRIP.stageRows Reihen eine Stufe intensiver.
   const TRIP = {
@@ -503,6 +589,7 @@
   // Zweite, unsichtbare Leinwand für die Lichtschweife im Trip (nur Fahrzeuge und Figur)
   const trail = document.createElement('canvas'), tctx = trail.getContext('2d');
   let tripStage = 1, hue = 0, beatPulse = 0, warp = [];
+  let hunter = { on: false, row: -99, col: 4, beatT: 0 }, radioQ = [], radioCur = null, radioSaid = {}, shard = { target: -1, placed: false }, foundThisRun = -1;
   let fxLow = matchMedia('(prefers-reduced-motion: reduce)').matches;
   try { const v = localStorage.getItem('nh-fx-low'); if (v !== null) fxLow = v === '1'; } catch (e) {}
   const tripFx = () => mode === 'trip' && !fxLow && state !== 'menu';
@@ -719,6 +806,29 @@
       g.beginPath(); g.arc(w - h * .25, h / 2, h * .1, 0, Math.PI * 2); g.fill();  // Frontlicht
     });
   }
+  function shardSprite() {
+    const s = Math.round(cell * .5);
+    return sprite(`shard|${s}`, s, s, cell * .35, (g, w, h) => {
+      g.shadowColor = '#e9f6ff'; g.shadowBlur = cell * .35;
+      g.fillStyle = 'rgba(233, 246, 255, .85)'; g.strokeStyle = P.cyan; g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(w * .5, 0); g.lineTo(w * .78, h * .45); g.lineTo(w * .5, h); g.lineTo(w * .22, h * .45); g.closePath(); g.fill(); g.stroke();
+      g.shadowBlur = 0; g.strokeStyle = 'rgba(255, 42, 109, .7)'; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(w * .5, h * .1); g.lineTo(w * .42, h * .5); g.lineTo(w * .56, h * .62); g.stroke();   // Riss
+    });
+  }
+  function hunterSprite() {
+    const s = Math.round(cell * .9);
+    return sprite(`hunter|${s}`, s, s, cell * .35, (g, w, h) => {
+      g.shadowColor = '#ff1432'; g.shadowBlur = cell * .3;
+      g.fillStyle = '#030006'; g.strokeStyle = 'rgba(255, 20, 50, .55)'; g.lineWidth = 1.5;
+      g.beginPath();                                  // langer Mantel mit Kapuze, von oben gesehen
+      g.moveTo(w * .5, h * .02); g.quadraticCurveTo(w * .85, h * .05, w * .82, h * .4);
+      g.lineTo(w * .95, h * .98); g.lineTo(w * .05, h * .98); g.lineTo(w * .18, h * .4);
+      g.quadraticCurveTo(w * .15, h * .05, w * .5, h * .02); g.closePath(); g.fill(); g.stroke();
+      g.shadowBlur = cell * .25; g.fillStyle = '#ff1432';
+      g.fillRect(w * .3, h * .22, w * .4, h * .05);   // schmales rotes Visier
+    });
+  }
   function droneSprite() {
     const w = Math.round(cell * .8), h = Math.round(cell * .42);
     return sprite(`drone|${w}`, w, h, cell * .3, (g, w, h) => {
@@ -894,6 +1004,27 @@
     tb.textContent = open ? 'Cosmic Neon-Trip' : `Cosmic Neon-Trip · ab Rang ${RANKS[TRIP.rank]}`;
     document.getElementById('fxBtn').textContent = 'Trip-Effekte: ' + (fxLow ? 'reduziert' : 'voll');
   }
+  function openArchive() {
+    const list = document.getElementById('archiveList');
+    list.replaceChildren();
+    document.getElementById('archiveCount').textContent = `${story.found} von ${MEMORIES.length} Erinnerungen`;
+    CHAPTERS.forEach((title, ch) => {
+      const h = document.createElement('h2');
+      h.textContent = `Kapitel ${ch + 1}: ${rankIdx() >= ch ? title : '█████'}`;
+      list.append(h);
+      MEMORIES.forEach((m, k) => {
+        if (m[0] !== ch) return;
+        const d = document.createElement('div');
+        const known = k < story.found;
+        d.className = 'frag' + (known ? '' : ' locked');
+        const sm = document.createElement('small'); sm.textContent = 'Erinnerung ' + (k + 1);
+        d.append(sm, document.createTextNode(known ? m[1] : rankIdx() >= ch ? '██████ ███ ████████ ██ ████' : 'Ab Rang ' + RANKS[ch]));
+        list.append(d);
+      });
+    });
+    document.getElementById('start').hidden = true;
+    document.getElementById('archive').hidden = false;
+  }
   function showStart() {
     fillMissions();
     syncTripButtons();
@@ -906,7 +1037,9 @@
     document.getElementById('leaderboard').hidden = true;
     document.getElementById('wardrobe').hidden = true;
     document.getElementById('districts').hidden = true;
+    document.getElementById('archive').hidden = true;
     document.getElementById('start').hidden = false;
+    document.getElementById('archiveBtn').textContent = `Archiv · ${story.found}/${MEMORIES.length}`;
     state = 'menu';
   }
   const LEADERBOARD_KEY = 'nh-leaderboard';
@@ -1238,6 +1371,12 @@
     points = 0; combo = 0; comboTimer = 0; mult = 1; hopId = 0; nmHop = -1; slow = 0; popups = [];
     pw = {}; invuln = 0; powersKey = ''; renderPowers();
     tripStage = 1; tctx.clearRect(0, 0, W, H);
+    hunter = { on: false, row: -99, col: 4, beatT: 0 };
+    radioQ = []; radioCur = null; radioSaid = {}; foundThisRun = -1;
+    document.getElementById('radio').hidden = true; document.getElementById('hunterEdge').style.opacity = 0;
+    // höchstens ein Erinnerungs-Splitter pro Run – nur wenn das Kapitel freigeschaltet ist
+    const nextMem = MEMORIES[story.found];
+    shard = { target: nextMem && rankIdx() >= nextMem[0] ? 32 + Math.floor(Math.random() * 40) : -1, placed: false };
     updateCombo();
     updateHud();
   }
@@ -1299,6 +1438,17 @@
     const tr = getRow(nr);
     if (tr.loot === nc) { tr.loot = -1; grabLoot(nc, nr); }
     if (tr.power && tr.power.col === nc) { grabPower(tr.power.type, nc, nr); tr.power = null; }
+    if (tr.shard === nc) {                            // Erinnerungs-Splitter
+      tr.shard = undefined; foundThisRun = story.found; story.found++; saveStory();
+      popup(nc + .5, nr + 1.3, 'ERINNERUNG #' + story.found, '#e9f6ff');
+      burst(nc + .5, nr + .5, 26, ['#e9f6ff', P.cyan, P.magenta], 3, .8);
+      Sound.sting('win');
+      say('eins', 'Eine Erinnerung. Halt sie fest.');
+    }
+    if (tr.safehouse && !inSafehouse && hunter.on && nr - hunter.row < HUNTER.gap) {
+      hunter.row = Math.min(hunter.row, nr - HUNTER.shake);   // im Safehouse verliert der Jäger deine Spur
+      sayFrom('safe', 'eins');
+    }
     if (tr.safehouse && !inSafehouse) {
       inSafehouse = true;
       if (heat > .3) { popup(nc + .5, nr + 1, 'UNTERGETAUCHT', P.cyan); Sound.safe(); }
@@ -1330,7 +1480,7 @@
                 ArrowLeft: [-1, 0], KeyA: [-1, 0], ArrowRight: [1, 0], KeyD: [1, 0] }[e.code];
     if (state !== 'play') {
       if (document.getElementById('leaderboard').hidden && document.getElementById('wardrobe').hidden &&
-          document.getElementById('districts').hidden && (k || e.code === 'Space' || e.code === 'Enter')) handleOverlayTap();
+          document.getElementById('districts').hidden && document.getElementById('archive').hidden && (k || e.code === 'Space' || e.code === 'Enter')) handleOverlayTap();
       return;
     }
     if (k) { e.preventDefault(); move(k[0], k[1]); }
@@ -1358,7 +1508,42 @@
     document.getElementById('leaderboard').hidden = true;
     document.getElementById('wardrobe').hidden = true;
     document.getElementById('districts').hidden = true;
+    document.getElementById('archive').hidden = true;
     state = 'play';
+    // Story-Einstieg: beim allerersten Run die Intro-Zeilen, bei neuem Rang ein Kapitel-Banner
+    if (!story.intro) { RADIO.intro.forEach(([v, t]) => say(v, t)); story.intro = true; saveStory(); }
+    if (rankIdx() > story.chapter && rankIdx() < CHAPTERS.length) {
+      story.chapter = rankIdx(); saveStory();
+      document.documentElement.style.setProperty('--ev', '#e9f6ff');
+      document.getElementById('bannerTitle').textContent = 'KAPITEL ' + (story.chapter + 1);
+      document.getElementById('bannerSub').textContent = CHAPTERS[story.chapter];
+      bannerEl.hidden = false; hintLeft = 2.4;
+    }
+  }
+
+  // ---------- Funksprüche ----------
+  // say('spiegel' | 'eins' | 'false', text) – Zeilen tippen sich unten ab, ohne das Spiel anzuhalten.
+  function say(voice, text) { radioQ.push({ voice, text }); }
+  function sayFrom(pool, voice, key) {
+    if (key) { if (radioSaid[key]) return; radioSaid[key] = true; }
+    const list = RADIO[pool];
+    say(voice, list[Math.floor(Math.random() * list.length)]);
+  }
+  const radioEl = document.getElementById('radio'), radioWho = document.getElementById('radioWho'), radioText = document.getElementById('radioText');
+  function updateRadio(dt) {
+    if (!radioCur && radioQ.length) {
+      radioCur = Object.assign(radioQ.shift(), { shown: 0, hold: 0 });
+      const v = radioCur.voice === 'false' ? VOICES.eins : VOICES[radioCur.voice];
+      radioWho.textContent = v.who; radioWho.style.color = v.color;
+      radioText.style.color = ''; radioEl.hidden = false;
+    }
+    if (!radioCur) return;
+    if (radioCur.shown < radioCur.text.length) {
+      radioCur.shown = Math.min(radioCur.text.length, radioCur.shown + dt * 32);   // Tippgeschwindigkeit: Zeichen pro Sekunde
+      radioText.textContent = radioCur.text.slice(0, Math.floor(radioCur.shown));
+      // „falsche“ Eins: die letzten Wörter kippen in SPIEGELs Farbe
+      if (radioCur.voice === 'false' && radioCur.shown > radioCur.text.length * .6) radioText.style.color = VOICES.spiegel.color;
+    } else if ((radioCur.hold += dt) > 2.6) { radioCur = null; radioEl.hidden = true; }
   }
 
   // ---------- Near-Miss ----------
@@ -1497,9 +1682,10 @@
   }
 
   function die(why) {
-    if (['car', 'drone', 'rail', 'laser'].includes(why) && invuln > 0) return;
-    if (['car', 'drone', 'rail', 'laser'].includes(why) && pw.shield > 0) {
-      pw.shield = 0; invuln = 1.2;                    // kurz unverwundbar, damit man aus dem Auto rauskommt
+    if (['car', 'drone', 'rail', 'laser', 'hunter'].includes(why) && invuln > 0) return;
+    if (['car', 'drone', 'rail', 'laser', 'hunter'].includes(why) && pw.shield > 0) {
+      pw.shield = 0; invuln = 1.2;
+      if (hunter.on) hunter.row = Math.min(hunter.row, player.row - HUNTER.shake);                    // kurz unverwundbar, damit man aus dem Auto rauskommt
       const e = ease(player.hopT);
       const x = player.fromCol + (player.col - player.fromCol) * e + .5;
       burst(x, player.row + .5, 36, [P.cyan, '#ffffff', P.blue], 4, .7);
@@ -1533,7 +1719,7 @@
     const shownRun = run;
     saveMissions();
     setTimeout(() => {
-      document.getElementById('overTag').textContent = cause === 'drone' ? 'Von Drohne gescannt' : cause === 'data' ? 'Im Datenstrom gelöscht' : cause === 'rail' ? 'Von der Magnetbahn erfasst' : cause === 'laser' ? 'Vom Laser gegrillt' : 'Geflasht';
+      document.getElementById('overTag').textContent = cause === 'drone' ? 'Von Drohne gescannt' : cause === 'data' ? 'Im Datenstrom gelöscht' : cause === 'rail' ? 'Von der Magnetbahn erfasst' : cause === 'laser' ? 'Vom Laser gegrillt' : cause === 'hunter' ? 'Der Jäger war schneller' : 'Geflasht';
       document.getElementById('overScore').textContent = score;
       const rec = score > prevBest && score > 0;
       document.getElementById('overBest').textContent = `◆ ${loot} Beute · Reihe ${player.maxRow} · ` + (rec ? 'Neuer Rekord' : 'Rekord: ' + Math.max(prevBest, score));
@@ -1548,6 +1734,14 @@
           `NEON HUSTLE · Daily ${dayKey}\n⚡ ${score} Punkte · Reihe ${player.maxRow} · ◆ ${loot}\nHeat ${'▰'.repeat(h)}${'▱'.repeat(5 - h)} · Combo ×${shownRun.maxMult || 1}`;
         document.getElementById('copyBtn').textContent = 'Ergebnis kopieren';
       }
+      const mb = document.getElementById('memoryBox');
+      mb.hidden = foundThisRun < 0;
+      if (foundThisRun >= 0) {
+        const m = MEMORIES[foundThisRun];
+        document.getElementById('memoryTitle').textContent = `Erinnerung ${foundThisRun + 1} · Kapitel ${m[0] + 1}: ${CHAPTERS[m[0]]}`;
+        document.getElementById('memoryText').textContent = m[1];
+      }
+      radioEl.hidden = true; document.getElementById('hunterEdge').style.opacity = 0;
       document.getElementById('over').hidden = false;
       fillMissions();                                 // erfüllte Missionen werden für die nächste Runde ersetzt
     }, 450);
@@ -1656,6 +1850,36 @@
       updateHeatHud();
       Sound.setIntensity(level);
       checkMissions();
+      updateRadio(dt);
+      // Funksprüche zu besonderen Momenten
+      if (player.maxRow >= 40) sayFrom(Math.random() < .5 ? 'spiegel' : 'eins', Math.random() < .5 ? 'spiegel' : 'eins', 'r40');
+      if (player.maxRow >= 90) sayFrom('spiegel', 'spiegel', 'r90');
+      if (player.maxRow >= 150) sayFrom('false', 'false', 'r150');
+      if (heat >= 4) sayFrom('heat', 'spiegel', 'heat');
+      // Erinnerungs-Splitter rechtzeitig vor dir auslegen (auf Straße oder Gasse, nicht im Safehouse)
+      if (shard.target > 0 && !shard.placed && player.maxRow >= shard.target - 18) {
+        for (let i = shard.target; i < shard.target + 8; i++) {
+          const r = getRow(i);
+          if (r.type === 'road' || (r.type === 'safe' && !r.safehouse && !r.laser)) { r.shard = Math.floor(Math.random() * COLS); break; }
+        }
+        shard.placed = true;
+      }
+      // Der Jäger
+      if (!hunter.on && player.maxRow >= HUNTER.startRow) { hunter.on = true; hunter.row = player.row - HUNTER.gap; hunter.col = player.col; }
+      if (hunter.on) {
+        const hs = HUNTER.speed * (mode === 'trip' ? HUNTER.tripMul : 1) * (pw.ghost > 0 ? .3 : 1) * slowF;
+        hunter.row = Math.max(hunter.row + hs * dt, player.row - HUNTER.gap);
+        hunter.col += (player.col - hunter.col) * Math.min(1, dt * 2);
+        const gapNow = hitPos().row - hunter.row;
+        const close = Math.max(0, Math.min(1, (HUNTER.warnGap - gapNow) / HUNTER.warnGap));
+        document.getElementById('hunterEdge').style.opacity = close.toFixed(2);
+        if (close > 0) {                               // Herzschlag, schneller je näher
+          hunter.beatT -= dt;
+          if (hunter.beatT <= 0) { Sound.heart(); hunter.beatT = .9 - close * .5; }
+        }
+        if (gapNow < 2.5) sayFrom('hunter', 'spiegel', 'hunter');
+        if (gapNow <= .15) return die('hunter');
+      }
       if (combo > 0) {
         comboTimer -= dt;
         comboBar.style.transform = `scaleX(${Math.max(0, Math.min(1, comboTimer / COMBO_WINDOW))})`;
@@ -1823,6 +2047,15 @@
       const bob = Math.sin(t * 3 + i) * cell * .06;
       blit(ps2, r.power.col * cell + (cell - sz) / 2, rowY(i) + (cell - sz) / 2 + bob);
     }
+    // Erinnerungs-Splitter: flimmernder, heller Kristall
+    for (let i = lo; i <= hi; i++) {
+      const r = getRow(i);
+      if (r.shard === undefined) continue;
+      const ss = shardSprite(), sz = Math.round(cell * .5), jit = Math.random() < .08 ? (Math.random() - .5) * 6 : 0;
+      ctx.globalAlpha = .75 + .25 * Math.sin(t * 9 + i);
+      blit(ss, r.shard * cell + (cell - sz) / 2 + jit, rowY(i) + (cell - sz) / 2 + Math.sin(t * 2 + i) * cell * .05);
+      ctx.globalAlpha = 1;
+    }
     // Beute
     for (let i = lo; i <= hi; i++) {
       const r = getRow(i);
@@ -1988,6 +2221,17 @@
         }
       }
     }
+    // Der Jäger: dunkle Gestalt mit rotem Visier, ein schwacher roter Kegel tastet nach dir
+    if (hunter.on && state !== 'menu') {
+      const hy = rowY(hunter.row), hx = hunter.col * cell, hsz = Math.round(cell * .9);
+      if (hy < H + cell * 2) {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = 'rgba(255, 20, 50, .09)';
+        ctx.beginPath(); ctx.moveTo(hx + cell / 2, hy + cell * .3); ctx.lineTo(hx - cell * .6, hy - cell * 2.2); ctx.lineTo(hx + cell * 1.6, hy - cell * 2.2); ctx.fill();
+        blit(hunterSprite(), hx + (cell - hsz) / 2, hy + (cell - hsz) / 2);
+        ctx.globalCompositeOperation = 'lighter';
+      }
+    }
     // Hafennebel: alles ab gut zwei Reihen vor dir verschwindet im Dunst
     if (fogK > .01) {
       ctx.globalCompositeOperation = 'source-over';
@@ -2104,6 +2348,8 @@
   document.getElementById('outfitEquipBtn').addEventListener('click', equipOutfit);
   document.getElementById('wardrobeBackBtn').addEventListener('click', showStart);
   document.getElementById('districtBtn').addEventListener('click', openDistricts);
+  document.getElementById('archiveBtn').addEventListener('click', openArchive);
+  document.getElementById('archiveBackBtn').addEventListener('click', showStart);
   document.getElementById('districtChooseBtn').addEventListener('click', chooseDistrict);
   document.getElementById('districtBackBtn').addEventListener('click', showStart);
   document.getElementById('againBtn').addEventListener('click', () => handleOverlayTap());
