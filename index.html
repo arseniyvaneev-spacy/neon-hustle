@@ -1,0 +1,983 @@
+<!doctype html>
+<html lang="de">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Neon Hustle Prototyp</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Rajdhani:wght@500;700&display=swap">
+<style>
+  /* Neon-Noir: ein fester dunkler Look (bewusst nur ein Theme). Licht statt Details. */
+  :root {
+    --night: #0d0221;      /* Hintergrund, fast schwarz-violett */
+    --alley: #1c0b3d;      /* sichere Gassen */
+    --asphalt: #05010f;    /* Hover-Highway */
+    --magenta: #ff2a6d;
+    --cyan: #05d9e8;
+    --violet: #a64dff;
+    --blue: #3d5afe;
+    --gold: #f9c80e;
+    --ink: #f2ecff;
+    --dim: #8c7fb0;
+    --display: "Orbitron", "Rajdhani", system-ui, sans-serif;
+    --body: "Rajdhani", system-ui, -apple-system, sans-serif;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    background: var(--night); color: var(--ink);
+    font: 500 17px/1.3 var(--body);
+    overflow: hidden; touch-action: none;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  }
+  #game { display: block; width: 100%; height: 100%; }
+  /* Scanlines über allem */
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(to bottom, rgb(255 255 255 / .025) 0 1px, transparent 1px 3px);
+    mix-blend-mode: overlay;
+  }
+  .hud {
+    position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding-block: 12px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    pointer-events: none; font-variant-numeric: tabular-nums;
+  }
+  #score {
+    font: 900 40px/1 var(--display); color: var(--ink);
+    text-shadow: 0 0 6px var(--cyan), 0 0 18px var(--cyan);
+  }
+  #best { font: 600 13px var(--display); color: var(--gold); letter-spacing: .12em; text-transform: uppercase;
+    text-shadow: 0 0 8px rgb(249 200 14 / .6); }
+  .overlay {
+    position: fixed; inset: 0; display: grid; place-content: center; gap: 12px;
+    text-align: center; background: radial-gradient(ellipse at center, rgb(13 2 33 / .55), rgb(13 2 33 / .9));
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .overlay h1 {
+    margin: 0; font: 900 clamp(34px, 11vw, 64px)/1 var(--display); letter-spacing: .04em;
+    color: var(--ink);
+    text-shadow: -2px 0 var(--magenta), 2px 0 var(--cyan), 0 0 24px var(--magenta);
+    animation: glitch 2.4s infinite steps(1);
+  }
+  .overlay p { margin: 0; color: var(--dim); max-width: 32ch; justify-self: center; }
+  .overlay p b { color: var(--cyan); font-weight: 700; }
+  .overlay .big { color: var(--ink); font: 600 16px var(--display); letter-spacing: .14em; text-transform: uppercase;
+    animation: pulse 1.4s ease-in-out infinite; }
+  .tag { color: var(--magenta); font: 600 12px var(--display); letter-spacing: .3em; text-transform: uppercase;
+    text-shadow: 0 0 10px var(--magenta); }
+  #over .tag { color: var(--magenta); }
+  #overBest { color: var(--gold); }
+  .hud .col { display: grid; gap: 6px; }
+  .hud .right { justify-items: end; }
+  #loot { font: 900 20px var(--display); color: var(--gold); text-shadow: 0 0 10px rgb(249 200 14 / .7); }
+  #heat { display: flex; align-items: center; gap: 4px; }
+  #heat span { font: 600 11px var(--display); letter-spacing: .2em; text-transform: uppercase; color: var(--dim); margin-right: 4px; }
+  #heat i { width: 16px; height: 7px; border-radius: 2px; background: rgb(166 77 255 / .18); transform: skewX(-20deg); }
+  #heat i.on { background: var(--magenta); box-shadow: 0 0 8px var(--magenta); }
+  #heat.hot i.on { animation: siren .5s steps(1) infinite; }
+  #heat.hot span { color: var(--magenta); }
+  @keyframes siren { 50% { background: var(--blue); box-shadow: 0 0 8px var(--blue); } }
+  #combo {
+    position: fixed; top: calc(env(safe-area-inset-top, 0px) + 64px); left: 50%; transform: translateX(-50%);
+    display: grid; justify-items: center; gap: 3px; pointer-events: none;
+  }
+  #comboMult { font: 900 30px/1 var(--display); color: var(--cyan);
+    text-shadow: 0 0 6px var(--cyan), 0 0 20px var(--blue); }
+  #combo.pop #comboMult { animation: pop .25s ease-out; }
+  #comboCount { font: 600 10px var(--display); letter-spacing: .25em; text-transform: uppercase; color: var(--dim); }
+  #combo i { display: block; width: 64px; height: 3px; background: rgb(5 217 232 / .15); border-radius: 2px; overflow: hidden; }
+  #combo u { display: block; height: 100%; background: var(--cyan); box-shadow: 0 0 6px var(--cyan); transform-origin: left; }
+  @keyframes pop { 0% { transform: scale(1.6); } 100% { transform: scale(1); } }
+  #mute {
+    position: fixed; z-index: 5;
+    right: max(14px, env(safe-area-inset-right, 0px));
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+    width: 44px; height: 44px; border-radius: 50%;
+    border: 1.5px solid var(--violet); background: rgb(13 2 33 / .6); color: var(--ink);
+    font: 700 20px/1 var(--body); box-shadow: 0 0 12px rgb(166 77 255 / .5);
+  }
+  #mute.off { color: var(--dim); border-color: var(--dim); box-shadow: none; text-decoration: line-through; }
+  #mute:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+  @keyframes pulse { 50% { opacity: .45; } }
+  @keyframes glitch {
+    0%, 86%, 100% { transform: none; }
+    88% { transform: translate(-3px, 1px) skewX(-8deg); }
+    90% { transform: translate(3px, -1px); text-shadow: 3px 0 var(--magenta), -3px 0 var(--cyan); }
+    92% { transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .overlay h1, .overlay .big { animation: none; } }
+</style>
+
+<canvas id="game"></canvas>
+<div class="hud">
+  <div class="col">
+    <div id="score">0</div>
+    <div id="heat" aria-label="Heat"><span>Heat</span><i></i><i></i><i></i><i></i><i></i></div>
+  </div>
+  <div class="col right">
+    <div id="best">Best 0</div>
+    <div id="loot">◆ 0</div>
+  </div>
+</div>
+<div id="combo" hidden><b id="comboMult">×2</b><span id="comboCount">Combo 6</span><i><u id="comboBar"></u></i></div>
+<button id="mute" type="button" aria-label="Ton aus">♪</button>
+
+<div class="overlay" id="start">
+  <div class="tag">Syndikat-Kurier · Sektor 7</div>
+  <h1>NEON HUSTLE</h1>
+  <p><b>Tippen</b> = vorwärts · <b>Wischen</b> = links, rechts, zurück</p>
+  <p>Am Rechner: Pfeiltasten · M = Ton</p>
+  <p><b>Datenkanal</b>: nur auf Server-Plattformen landen. <b>Safehouse</b>: hier kühlt Heat schnell ab, Drohnen kommen nicht rein.</p>
+  <p>Ohne Pause vorwärts = <b>Combo-Multiplikator</b>. Knapp an Autos vorbei = <b style="color:var(--magenta)">Bonus</b>.</p>
+  <p><b style="color:var(--gold)">◆ Beute</b> gibt Punkte, macht dich aber heiß. Mehr <b style="color:var(--magenta)">Heat</b> heißt: schnellerer Verkehr und Polizei-Drohnen. Wer untertaucht, kühlt ab.</p>
+  <p class="big">Tippen zum Starten</p>
+</div>
+<div class="overlay" id="over" hidden>
+  <div class="tag" id="overTag">Geflasht</div>
+  <h1 id="overScore">0</h1>
+  <p id="overBest"></p>
+  <p class="big">Tippen für neue Runde</p>
+</div>
+
+<script>
+(() => {
+  // ---------- Sound: alles live mit Web Audio erzeugt, keine Dateien ----------
+  const Sound = (() => {
+    let ac = null, master, sfx, music, bassFilter, noiseBuf, timer = null;
+    let step = 0, nextT = 0, intensity = 0, muted = false;
+    try { muted = localStorage.getItem('nh-mute') === '1'; } catch (e) {}
+    const BPM = 112, STEP = 60 / BPM / 4;                    // Sechzehntel
+    const ROOTS = [33, 29, 36, 31];                          // A, F, C, G (MIDI)
+    const CHORDS = [[0, 3, 7], [0, 4, 7], [0, 4, 7], [0, 4, 7]];
+    const BASS = [0, 0, 12, 0, 0, 12, 0, 12, 0, 0, 12, 0, 0, 12, 7, 12];
+    const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+
+    function init() {
+      if (ac) { if (ac.state !== 'running') ac.resume(); return; }
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      ac = new AC();
+      const comp = ac.createDynamicsCompressor(); comp.connect(ac.destination);
+      master = ac.createGain(); master.gain.value = muted ? 0 : .9; master.connect(comp);
+      sfx = ac.createGain(); sfx.gain.value = .55; sfx.connect(master);
+      music = ac.createGain(); music.gain.value = .22; music.connect(master);
+      bassFilter = ac.createBiquadFilter(); bassFilter.type = 'lowpass'; bassFilter.frequency.value = 500; bassFilter.Q.value = 6;
+      bassFilter.connect(music);
+      noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+      const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      nextT = ac.currentTime + .1;
+      timer = setInterval(schedule, 25);
+    }
+    function tone(type, f0, f1, dur, vol, when = 0, dest = sfx) {
+      if (!ac) return;
+      const t = Math.max(ac.currentTime, when || ac.currentTime);
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = type; o.frequency.setValueAtTime(f0, t);
+      if (f1) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      o.connect(g); g.connect(dest); o.start(t); o.stop(t + dur + .02);
+    }
+    function noise(dur, vol, f0, f1, when = 0, dest = sfx, ftype = 'bandpass') {
+      if (!ac) return;
+      const t = Math.max(ac.currentTime, when || ac.currentTime);
+      const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+      src.buffer = noiseBuf; f.type = ftype; f.frequency.setValueAtTime(f0, t);
+      if (f1) f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      src.connect(f); f.connect(g); g.connect(dest); src.start(t); src.stop(t + dur + .02);
+    }
+    // Synthwave-Loop: Kick, Clap, Hi-Hats (ab Heat 1), Bass, Arpeggio (ab Heat 2)
+    function schedule() {
+      if (ac.state !== 'running') return;
+      while (nextT < ac.currentTime + .12) {
+        const s16 = step % 16, bar = Math.floor(step / 16) % 4, root = ROOTS[bar];
+        if (s16 % 4 === 0) tone('sine', 150, 42, .22, .9, nextT, music);
+        if (s16 === 4 || s16 === 12) noise(.14, .5, 1800, 900, nextT, music);
+        if (intensity >= 1 && s16 % 2 === 1) noise(.035, .25, 9000, 0, nextT, music, 'highpass');
+        bassFilter.frequency.setTargetAtTime(450 + intensity * 260, nextT, .3);
+        tone('sawtooth', hz(root + BASS[s16]), 0, STEP * .9, .32, nextT, bassFilter);
+        if (intensity >= 2 && s16 % 2 === 0) {
+          const ch = CHORDS[bar], n = root + 36 + ch[(s16 / 2) % ch.length] + (s16 >= 8 ? 12 : 0);
+          tone('square', hz(n), 0, STEP * 1.6, .06, nextT, music);
+        }
+        nextT += STEP; step++;
+      }
+    }
+    return {
+      init,
+      setIntensity(l) { intensity = l; },
+      pause(on) { if (ac) on ? ac.suspend() : ac.resume(); },
+      duck(on) { if (ac) music.gain.setTargetAtTime(on ? .06 : .22, ac.currentTime, .15); },
+      toggleMute() {
+        muted = !muted;
+        try { localStorage.setItem('nh-mute', muted ? '1' : '0'); } catch (e) {}
+        if (ac) master.gain.setTargetAtTime(muted ? 0 : .9, ac.currentTime, .05);
+        return muted;
+      },
+      isMuted: () => muted,
+      hop(combo) { const f = 440 * Math.pow(1.03, Math.min(combo, 24)); tone('square', f, f * 1.5, .05, .1); },
+      loot() { tone('triangle', 1320, 0, .09, .3); tone('triangle', 1980, 0, .22, .25, ac && ac.currentTime + .06); },
+      near() { noise(.28, .45, 600, 7000); tone('sawtooth', 260, 900, .16, .06); },
+      combo(m) { [0, 4, 7, 12].forEach((n, k) => tone('square', hz(69 + (m - 2) * 2 + n), 0, .09, .08, ac && ac.currentTime + k * .05)); },
+      warn() { tone('square', 988, 0, .09, .09); tone('square', 740, 0, .09, .09, ac && ac.currentTime + .13); },
+      splash() { tone('square', 700, 60, .45, .16); noise(.4, .5, 6000, 300, 0, sfx, 'highpass'); },
+      safe() { [57, 64, 69].forEach((n, k) => tone('sine', hz(n + 12), 0, .6, .12, ac && ac.currentTime + k * .07)); },
+      death() { tone('sawtooth', 240, 35, .7, .35); noise(.6, .6, 4000, 120, 0, sfx, 'lowpass'); tone('sine', 90, 30, .5, .7); }
+    };
+  })();
+  document.addEventListener('visibilitychange', () => Sound.pause(document.hidden)); // kein Ton im Hintergrund
+
+  const COLS = 9;
+  const COMBO_WINDOW = 1.1;   // Sekunden bis die Combo verfällt
+  const HOP_MS = 75;          // Dauer eines Hüpfers in ms (kleiner = flinker)
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const css = getComputedStyle(document.documentElement);
+  const C = n => css.getPropertyValue('--' + n).trim();
+  const P = { night: C('night'), alley: C('alley'), asphalt: C('asphalt'), magenta: C('magenta'),
+              cyan: C('cyan'), violet: C('violet'), blue: C('blue'), gold: C('gold'), ink: C('ink') };
+  const CAR_COLORS = [P.magenta, P.cyan, P.blue];
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  let W, H, cell, dpr;
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2); // 2x reicht, spart viel Rechenzeit
+    W = canvas.clientWidth; H = canvas.clientHeight;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cell = W / COLS;
+    sprites.clear();
+  }
+
+  // ---------- Glow-Sprites (einmal mit Blur rendern, dann nur noch kopieren = schnell auf dem iPhone) ----------
+  const sprites = new Map();
+  function sprite(key, w, h, pad, paint) {
+    let s = sprites.get(key);
+    if (s) return s;
+    const c = document.createElement('canvas');
+    c.width = Math.ceil((w + pad * 2) * dpr); c.height = Math.ceil((h + pad * 2) * dpr);
+    const g = c.getContext('2d');
+    g.scale(dpr, dpr); g.translate(pad, pad);
+    paint(g, w, h);
+    s = { c, pad, w: w + pad * 2, h: h + pad * 2 };
+    sprites.set(key, s);
+    return s;
+  }
+  function rr(g, x, y, w, h, r) {
+    g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+  }
+
+  function carSprite(wCells, color, dir, truck) {
+    const w = Math.round(wCells * cell) - 4, h = Math.round(cell * 0.62);
+    return sprite(`car|${w}|${color}|${dir}|${truck}`, w, h, cell * 0.35, (g, w, h) => {
+      // Alles wird nach rechts fahrend gezeichnet und bei Bedarf gespiegelt
+      if (dir < 0) { g.translate(w, 0); g.scale(-1, 1); }
+      // Unterboden-Glow (Hover)
+      g.shadowColor = color; g.shadowBlur = cell * .35;
+      g.fillStyle = color; g.globalAlpha = .3; rr(g, w * .05, h * .2, w * .9, h * .6, h * .3); g.fill();
+      g.globalAlpha = 1;
+      if (truck) {
+        // Sattelschlepper: Auflieger hinten, Lücke, Zugmaschine vorne
+        const cab = Math.min(h * 1.05, w * .32), gap = 3, trail = w - cab - gap;
+        g.shadowBlur = cell * .15; g.strokeStyle = color; g.lineWidth = 2;
+        g.fillStyle = '#140628'; rr(g, 0, 0, trail, h, 3); g.fill(); g.stroke();
+        g.shadowBlur = 0; g.globalAlpha = .35; g.fillStyle = color;
+        for (let x = 6; x < trail - 4; x += 7) g.fillRect(x, 4, 2, h - 8);          // Rippen
+        g.globalAlpha = 1;
+        g.shadowBlur = cell * .15;
+        g.fillStyle = '#1a0833'; rr(g, trail + gap, h * .04, cab, h * .92, h * .2); g.fill(); g.stroke();
+        g.shadowBlur = 0; g.fillStyle = color; g.globalAlpha = .45;
+        rr(g, trail + gap + cab * .55, h * .14, cab * .3, h * .72, 3); g.fill();      // Frontscheibe
+        g.globalAlpha = 1;
+        // Lichter
+        g.shadowColor = '#fff6d6'; g.shadowBlur = cell * .2; g.fillStyle = '#fff6d6';
+        g.fillRect(w - 3, h * .12, 3, h * .2); g.fillRect(w - 3, h * .68, 3, h * .2);
+        g.shadowColor = '#ff2a4d'; g.fillStyle = '#ff2a4d';
+        g.fillRect(0, h * .1, 2, h * .8);
+      } else {
+        // E-Limousine: flache, lange Form, Glasdach, durchgehende Lichtleisten
+        g.shadowBlur = cell * .15; g.strokeStyle = color; g.lineWidth = 2;
+        g.fillStyle = '#0b0320';
+        g.beginPath();
+        g.moveTo(w * .06, h * .1);
+        g.quadraticCurveTo(w * .5, -h * .04, w * .9, h * .1);   // Seite oben
+        g.quadraticCurveTo(w * 1.01, h * .5, w * .9, h * .9);   // runde Front
+        g.quadraticCurveTo(w * .5, h * 1.04, w * .06, h * .9);  // Seite unten
+        g.quadraticCurveTo(-w * .01, h * .5, w * .06, h * .1);  // Heck
+        g.closePath(); g.fill(); g.stroke();
+        g.shadowBlur = 0;
+        // Panorama-Glasdach
+        const roof = g.createLinearGradient(w * .25, 0, w * .75, 0);
+        roof.addColorStop(0, 'rgba(255,255,255,.05)'); roof.addColorStop(.6, color); roof.addColorStop(1, 'rgba(255,255,255,.15)');
+        g.fillStyle = roof; g.globalAlpha = .45;
+        rr(g, w * .26, h * .2, w * .46, h * .6, h * .22); g.fill();
+        g.globalAlpha = 1;
+        // Lichtleisten vorne (weiß) und hinten (rot), über die ganze Breite
+        g.shadowColor = '#e9f6ff'; g.shadowBlur = cell * .2; g.fillStyle = '#e9f6ff';
+        rr(g, w * .9, h * .2, 2.5, h * .6, 1.2); g.fill();
+        g.shadowColor = '#ff2a4d'; g.fillStyle = '#ff2a4d';
+        rr(g, w * .035, h * .18, 2.5, h * .64, 1.2); g.fill();
+      }
+    });
+  }
+
+  function playerSprite(dead) {
+    const s = Math.round(cell * 0.6);
+    return sprite(`player|${s}|${dead}`, s, s, cell * 0.3, (g, w, h) => {
+      const rim = dead ? '#ff3b3b' : P.magenta;
+      // Hoodie
+      g.shadowColor = rim; g.shadowBlur = cell * .22;
+      g.fillStyle = '#1a0b33'; g.strokeStyle = rim; g.lineWidth = 2.2;
+      g.beginPath();
+      g.moveTo(w * .5, 0);
+      g.quadraticCurveTo(w, 0, w, h * .45); g.lineTo(w, h * .82);
+      g.quadraticCurveTo(w, h, w * .8, h); g.lineTo(w * .2, h);
+      g.quadraticCurveTo(0, h, 0, h * .82); g.lineTo(0, h * .45);
+      g.quadraticCurveTo(0, 0, w * .5, 0); g.closePath();
+      g.fill(); g.stroke();
+      // LED-Visier
+      g.shadowColor = P.cyan; g.shadowBlur = cell * .2; g.fillStyle = dead ? '#ff3b3b' : P.cyan;
+      rr(g, w * .16, h * .32, w * .68, h * .16, h * .08); g.fill();
+      // Goldkette
+      g.shadowColor = P.gold; g.shadowBlur = cell * .12; g.strokeStyle = P.gold; g.lineWidth = 2;
+      g.beginPath(); g.arc(w * .5, h * .62, w * .2, 0.15 * Math.PI, 0.85 * Math.PI); g.stroke();
+      g.fillStyle = P.gold; g.beginPath(); g.arc(w * .5, h * .83, w * .06, 0, Math.PI * 2); g.fill();
+    });
+  }
+
+  function signSprite(color, len) {
+    const w = Math.round(cell * len), h = Math.max(3, Math.round(cell * .09));
+    return sprite(`sign|${w}|${color}`, w, h, cell * .3, (g, w, h) => {
+      g.shadowColor = color; g.shadowBlur = cell * .25; g.fillStyle = color;
+      rr(g, 0, 0, w, h, h / 2); g.fill(); g.fill();
+    });
+  }
+
+  function lootSprite() {
+    const s = Math.round(cell * .34);
+    return sprite(`loot|${s}`, s, s, cell * .3, (g, w, h) => {
+      g.shadowColor = P.gold; g.shadowBlur = cell * .3;
+      g.fillStyle = '#2a1d00'; g.strokeStyle = P.gold; g.lineWidth = 2.5;
+      g.beginPath(); g.moveTo(w / 2, 0); g.lineTo(w, h / 2); g.lineTo(w / 2, h); g.lineTo(0, h / 2); g.closePath();
+      g.fill(); g.stroke();
+      g.fillStyle = P.gold; g.beginPath(); g.arc(w / 2, h / 2, w * .14, 0, Math.PI * 2); g.fill();
+    });
+  }
+  function platSprite(wCells) {
+    const w = Math.round(wCells * cell) - 6, h = Math.round(cell * .66);
+    return sprite(`plat|${w}`, w, h, cell * .3, (g, w, h) => {
+      g.shadowColor = P.cyan; g.shadowBlur = cell * .3;
+      g.fillStyle = P.cyan; g.globalAlpha = .25; rr(g, 0, h * .6, w, h * .5, 4); g.fill(); g.globalAlpha = 1;
+      g.shadowBlur = cell * .12;
+      g.fillStyle = '#120a35'; g.strokeStyle = P.blue; g.lineWidth = 2;
+      rr(g, 0, 0, w, h, 4); g.fill(); g.stroke();
+      g.shadowBlur = 0;
+      // Server-Einschübe mit LEDs
+      const slots = Math.max(2, Math.round(w / (cell * .5)));
+      for (let k = 0; k < slots; k++) {
+        const x = 5 + k * (w - 10) / slots;
+        g.fillStyle = 'rgba(61, 90, 254, .25)'; g.fillRect(x + 1, h * .2, (w - 10) / slots - 3, h * .6);
+        g.fillStyle = k % 3 === 0 ? P.magenta : P.cyan;
+        g.fillRect(x + 3, h * .3, 3, 3); g.fillRect(x + 3, h * .62, 3, 3);
+      }
+    });
+  }
+  function safehouseSprite() {
+    const w = Math.round(cell * 3.2), h = Math.round(cell * .5);
+    return sprite(`safe|${w}`, w, h, cell * .3, (g, w, h) => {
+      g.shadowColor = P.cyan; g.shadowBlur = cell * .3;
+      g.strokeStyle = P.cyan; g.lineWidth = 2; rr(g, 1, 1, w - 2, h - 2, h * .25); g.stroke();
+      g.fillStyle = P.cyan; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = `900 ${Math.round(h * .5)}px Orbitron, sans-serif`;
+      g.fillText('SAFEHOUSE', w / 2, h / 2 + 1);
+    });
+  }
+  function droneSprite() {
+    const w = Math.round(cell * .8), h = Math.round(cell * .42);
+    return sprite(`drone|${w}`, w, h, cell * .3, (g, w, h) => {
+      g.shadowColor = '#ffffff'; g.shadowBlur = cell * .15;
+      g.fillStyle = '#0b0320'; g.strokeStyle = '#e6e9ff'; g.lineWidth = 2;
+      rr(g, w * .2, h * .2, w * .6, h * .6, h * .2); g.fill(); g.stroke();
+      g.lineWidth = 1.5;
+      for (const x of [w * .1, w * .9]) { g.beginPath(); g.ellipse(x, h * .35, w * .1, h * .1, 0, 0, Math.PI * 2); g.stroke(); }
+    });
+  }
+
+  window.addEventListener('resize', resize);
+  // Schrift fürs Safehouse-Schild ist evtl. erst später geladen → Sprites dann neu zeichnen
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => sprites.clear());
+  resize();
+
+  // ---------- Welt ----------
+  let rows, player, camRow, score, state, deadAt, lastT, shake = 0, glitch = 0;
+  let particles = [];
+  let haze = null;
+  let points = 0, combo = 0, comboTimer = 0, mult = 1, hopId = 0, nmHop = -1, slow = 0, popups = [];
+  let lastSafehouse = 0, inSafehouse = false;
+  let heat = 0, loot = 0, drones = [], droneTimer = 3, heatShown = -1, cause = '';
+  let best = 0;
+  try { best = +localStorage.getItem('nh-best') || 0; } catch (e) {}
+
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+
+  function makeRow(i) {
+    const r = makeRowBase(i);
+    r.loot = i >= 4 && r.type !== 'data' && !r.safehouse && Math.random() < .2 ? Math.floor(Math.random() * COLS) : -1;
+    return r;
+  }
+  function makeData(i, prev) {
+    const level = Math.min(i / 160, 1);
+    const dir = prev.type === 'data' ? -prev.dir : (Math.random() < .5 ? 1 : -1);
+    const speed = rand(.9, 1.5) + level * 1.1;
+    const plats = [];
+    let x = rand(0, 1.5);
+    while (x < COLS + 8) {
+      const w = pick([2, 2.5, 3]);
+      plats.push({ x, w });
+      x += w + rand(1.1, 2.3);                     // Lücken klein genug, dass bald eine Plattform kommt
+    }
+    return { type: 'data', dir, speed, plats, span: x, run: prev.type === 'data' ? prev.run + 1 : 1, decor: [] };
+  }
+  function onPlatform(row, x) {
+    const r = getRow(row), cx = x + .5;
+    for (const p of r.plats) for (const off of [0, -r.span, r.span]) {
+      const a = p.x - 4 + off;
+      if (cx > a + .08 && cx < a + p.w - .08) return true;
+    }
+    return false;
+  }
+  function makeRowBase(i) {
+    const decor = [];
+    const n = Math.random() < .7 ? 1 + Math.floor(Math.random() * 2) : 0;
+    for (let k = 0; k < n; k++) decor.push({ x: rand(0, COLS - 1.5), len: rand(.6, 1.6), color: pick([P.magenta, P.cyan, P.violet, P.blue, P.magenta]), ph: rand(0, 6.28), top: Math.random() < .5 });
+    if (i < 3) return { type: 'safe', decor };
+    const prev = rows.get(i - 1);
+    // Safehouse: frühestens ab Reihe 15, dann etwa alle 22–40 Reihen
+    if (i >= 15 && i - lastSafehouse >= 22 && Math.random() < .25) {
+      lastSafehouse = i;
+      return { type: 'safe', safehouse: true, decor: [] };
+    }
+    // Datenkanal: ab Reihe 6, Blöcke aus 1–3 Reihen
+    if (i >= 6 && prev && !prev.safehouse &&
+        ((prev.type === 'data' && prev.run < 3 && Math.random() < .55) ||
+         (prev.type !== 'data' && Math.random() < .16))) {
+      return makeData(i, prev);
+    }
+    const roadChance = prev && prev.type === 'safe' ? 0.8 : 0.62;
+    if (Math.random() > roadChance) return { type: 'safe', decor };
+    const level = Math.min(i / 160, 1);           // wird mit der Zeit schneller
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    const speed = rand(1.1, 2.1) + level * 2.0;    // Zellen pro Sekunde
+    const isTruck = i > 8 && Math.random() < 0.14;
+    const span = COLS + 8;                          // Spurlänge inkl. Rand
+    const cars = [];
+    const color = isTruck ? P.violet : pick(CAR_COLORS);
+    let x = rand(0, 3);
+    while (x < span - 2) {
+      const w = isTruck ? pick([1.9, 2.3]) : pick([1.1, 1.3]);
+      cars.push({ x, w });
+      x += w + rand(isTruck ? 3.2 : 2.6, 5.6);       // großzügige Lücken → fair
+    }
+    return { type: 'road', dir, speed, cars, span, truck: isTruck, color };
+  }
+  function getRow(i) {
+    if (!rows.has(i)) rows.set(i, makeRow(i));
+    return rows.get(i);
+  }
+
+  function reset() {
+    rows = new Map(); lastSafehouse = 0; inSafehouse = false;
+    for (let i = -6; i < 30; i++) getRow(i);
+    player = { col: 4, row: 0, fromCol: 4, fromRow: 0, hopT: 1, queued: null, maxRow: 0 };
+    camRow = -2;
+    score = 0; particles = []; shake = 0; glitch = 0;
+    heat = 0; loot = 0; drones = []; droneTimer = 3; heatShown = -1;
+    points = 0; combo = 0; comboTimer = 0; mult = 1; hopId = 0; nmHop = -1; slow = 0; popups = [];
+    updateCombo();
+    updateHud();
+  }
+
+  // ---------- Partikel ----------
+  function burst(x, y, n, colors, speed, life) {
+    for (let k = 0; k < n; k++) {
+      const a = Math.random() * Math.PI * 2, v = rand(.3, 1) * speed;
+      particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life, max: life, color: pick(colors), size: rand(.04, .1) });
+    }
+  }
+
+  // ---------- Eingabe ----------
+  function move(dc, dr) {
+    if (state !== 'play') return;
+    if (player.hopT < .6) { player.queued = [dc, dr]; return; } // ab 60 % des Sprungs gleich weiter
+    const nc = Math.round(player.col) + dc, nr = player.row + dr;
+    if (nc < 0 || nc >= COLS) return;
+    if (nr < Math.floor(camRow)) return;           // nicht aus dem Bild nach unten
+    nearMiss(player.row, player.col, false);        // in letzter Sekunde ausgewichen?
+    burst(player.col + .5, player.row + .2, 5, [P.cyan, P.violet], 1.2, .35);
+    player.fromCol = player.col; player.fromRow = player.row;
+    player.col = nc; player.row = nr; player.hopT = 0; hopId++;
+    if (nr > player.maxRow) {
+      player.maxRow = nr;
+      combo++; comboTimer = COMBO_WINDOW;
+      const m = Math.min(5, 1 + Math.floor(combo / 6));
+      if (m > mult) { mult = m; Sound.combo(m); popup(nc + .5, nr + 1, '×' + m + ' COMBO', P.cyan); }
+      mult = m;
+      points += mult;
+      updateCombo(true);
+    }
+    Sound.hop(combo);
+    const tr = getRow(nr);
+    if (tr.loot === nc) { tr.loot = -1; grabLoot(nc, nr); }
+    if (tr.safehouse && !inSafehouse) {
+      inSafehouse = true;
+      if (heat > .3) { popup(nc + .5, nr + 1, 'UNTERGETAUCHT', P.cyan); Sound.safe(); }
+    } else if (!tr.safehouse) inSafehouse = false;
+    score = points;
+    updateHud();
+    if (navigator.vibrate) navigator.vibrate(8);
+  }
+
+  // Wischen löst aus, sobald der Finger 18 px gewandert ist – nicht erst beim Loslassen.
+  let sx = 0, sy = 0, down = false, swiped = false;
+  canvas.addEventListener('pointerdown', e => { sx = e.clientX; sy = e.clientY; down = true; swiped = false; });
+  window.addEventListener('pointermove', e => {
+    if (!down || swiped || state !== 'play') return;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.hypot(dx, dy) < 18) return;
+    swiped = true;
+    if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 1 : -1, 0);
+    else move(0, dy < 0 ? 1 : -1);
+  });
+  window.addEventListener('pointercancel', () => { down = false; });
+  window.addEventListener('pointerup', () => {
+    if (state !== 'play') return handleOverlayTap();
+    if (down && !swiped) move(0, 1);
+    down = false;
+  });
+  window.addEventListener('keydown', e => {
+    const k = { ArrowUp: [0, 1], KeyW: [0, 1], ArrowDown: [0, -1], KeyS: [0, -1],
+                ArrowLeft: [-1, 0], KeyA: [-1, 0], ArrowRight: [1, 0], KeyD: [1, 0] }[e.code];
+    if (state !== 'play') { if (k || e.code === 'Space' || e.code === 'Enter') handleOverlayTap(); return; }
+    if (k) { e.preventDefault(); move(k[0], k[1]); }
+  });
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  const muteBtn = document.getElementById('mute');
+  function syncMute() { muteBtn.classList.toggle('off', Sound.isMuted()); muteBtn.setAttribute('aria-label', Sound.isMuted() ? 'Ton an' : 'Ton aus'); }
+  ['pointerdown', 'pointerup'].forEach(ev => muteBtn.addEventListener(ev, e => e.stopPropagation()));
+  muteBtn.addEventListener('click', () => { Sound.init(); Sound.toggleMute(); syncMute(); });
+  window.addEventListener('keydown', e => { if (e.code === 'KeyM') { Sound.init(); Sound.toggleMute(); syncMute(); } });
+  syncMute();
+
+  function handleOverlayTap() {
+    if (state === 'dead' && performance.now() - deadAt < 600) return; // kein versehentlicher Neustart
+    Sound.init(); Sound.duck(false);
+    reset();
+    document.getElementById('start').hidden = true;
+    document.getElementById('over').hidden = true;
+    state = 'play';
+  }
+
+  // ---------- Near-Miss ----------
+  // Ein Auto ist höchstens 0,35 Felder entfernt. away = nur Autos, die sich gerade entfernen.
+  function nearMiss(row, px, away) {
+    if (nmHop === hopId) return;
+    const r = getRow(row);
+    if (r.type !== 'road') return;
+    const a = px + .18, b = px + .82;
+    for (const c of r.cars) {
+      for (const off of [0, -r.span, r.span]) {
+        const cx = c.x - 4 + off;
+        const right = cx >= b, gap = right ? cx - b : a - (cx + c.w);
+        if (gap < 0 || gap > .35) continue;
+        if (away && (right ? r.dir < 0 : r.dir > 0)) continue;
+        nmHop = hopId;
+        points += 2 * mult; score = points; updateHud();
+        comboTimer = COMBO_WINDOW; updateCombo();
+        popup(px + .5, row + 1, 'KNAPP! +' + 2 * mult, P.magenta);
+        burst(px + .5, row + .5, 12, [P.magenta, '#ffffff'], 2, .4);
+        Sound.near();
+        if (!reduceMotion) slow = .14;
+        return;
+      }
+    }
+  }
+
+  // ---------- Schwebende Texte ----------
+  function popup(x, row, text, color) { popups.push({ x, row, text, color, life: .9 }); }
+
+  // ---------- Combo-Anzeige ----------
+  const comboEl = document.getElementById('combo'), comboBar = document.getElementById('comboBar');
+  function updateCombo(bump) {
+    comboEl.hidden = combo < 2;
+    document.getElementById('comboMult').textContent = '×' + mult;
+    document.getElementById('comboCount').textContent = 'Combo ' + combo;
+    if (bump && mult > 1) { comboEl.classList.remove('pop'); void comboEl.offsetWidth; comboEl.classList.add('pop'); }
+  }
+
+  function grabLoot(c, r) {
+    loot++;
+    points += 3 * mult;
+    Sound.loot();
+    popup(c + .5, r + 1, '+' + 3 * mult, P.gold);
+    heat = Math.min(5, heat + .45);
+    burst(c + .5, r, 18, [P.gold, '#fff3b0', P.magenta], 2.5, .6);
+    if (navigator.vibrate) navigator.vibrate([10, 20, 10]);
+  }
+
+  const heatSegs = document.querySelectorAll('#heat i');
+  function updateHeatHud() {
+    const q = Math.round(heat * 20);
+    if (q === heatShown) return;
+    heatShown = q;
+    const lvl = Math.floor(heat), segs = heatSegs;
+    segs.forEach((el, k) => {
+      el.classList.toggle('on', k < lvl);
+      el.style.opacity = k < lvl ? 1 : k === lvl ? .35 + (heat - lvl) * .65 : 1;
+    });
+    document.getElementById('heat').classList.toggle('hot', lvl >= 3);
+  }
+
+  function updateHud() {
+    document.getElementById('loot').textContent = '◆ ' + loot;
+    document.getElementById('score').textContent = score;
+    document.getElementById('best').textContent = 'Best ' + Math.max(best, score);
+  }
+
+  function die(why) {
+    cause = why || 'car';
+    state = 'dead'; deadAt = performance.now();
+    if (cause === 'data') Sound.splash();
+    Sound.death(); Sound.duck(true);
+    combo = 0; comboEl.hidden = true;
+    const t = ease(player.hopT);
+    burst(player.fromCol + (player.col - player.fromCol) * t + .5, player.row + .5, 40, [P.magenta, P.violet, P.cyan, P.blue, '#ffffff'], 4, .9);
+    shake = reduceMotion ? 0 : 0.35; glitch = reduceMotion ? 0 : 0.4;
+    if (navigator.vibrate) navigator.vibrate([40, 30, 60]);
+    if (score > best) { best = score; try { localStorage.setItem('nh-best', best); } catch (e) {} }
+    setTimeout(() => {
+      document.getElementById('overTag').textContent = cause === 'drone' ? 'Von Drohne gescannt' : cause === 'data' ? 'Im Datenstrom gelöscht' : 'Geflasht';
+      document.getElementById('overScore').textContent = score;
+      document.getElementById('overBest').textContent = `◆ ${loot} Beute · ` + (score >= best && score > 0 ? 'Neuer Rekord' : 'Rekord: ' + best);
+      document.getElementById('over').hidden = false;
+    }, 450);
+  }
+
+  // ---------- Regen ----------
+  const rain = Array.from({ length: 70 }, () => ({ x: Math.random(), y: Math.random(), len: rand(.012, .035), sp: rand(.5, 1.1) }));
+
+  // ---------- Update ----------
+  function update(dt) {
+    const level = Math.floor(heat);
+    const speedMult = 1 + level * .12;
+    const lo = Math.floor(camRow) - 2, hi = lo + Math.ceil(H / cell) + 4;
+    for (let i = lo; i <= hi; i++) {
+      const r = getRow(i);
+      if (r.type === 'data') {
+        for (const p of r.plats) {
+          p.x += r.dir * r.speed * dt;
+          if (p.x > r.span) p.x -= r.span;
+          if (p.x < 0) p.x += r.span;
+        }
+        continue;
+      }
+      if (r.type !== 'road') continue;
+      for (const c of r.cars) {
+        c.x += r.dir * r.speed * speedMult * dt;
+        if (c.x > r.span) c.x -= r.span;
+        if (c.x < 0) c.x += r.span;
+      }
+    }
+    for (const d of rain) { d.y += d.sp * dt; d.x -= d.sp * dt * .12; if (d.y > 1.05) { d.y = -.05; d.x = Math.random() * 1.1; } }
+    for (const p of particles) { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .92; p.vy *= .92; p.life -= dt; }
+    particles = particles.filter(p => p.life > 0);
+    shake = Math.max(0, shake - dt); glitch = Math.max(0, glitch - dt);
+    // Drohnen fliegen immer weiter, neue gibt es nur im Spiel
+    for (const d of drones) { if (d.warn > 0) d.warn -= dt; else d.x += d.dir * d.speed * dt; }
+    drones = drones.filter(d => d.x > -3 && d.x < COLS + 3);
+    if (state === 'play') {
+      const cool = getRow(player.row).safehouse ? .18 : .05;   // im Safehouse ~3,5x schneller
+      heat = Math.max(0, heat - dt * cool);
+      if (level >= 1) {
+        droneTimer -= dt;
+        if (droneTimer <= 0) {
+          droneTimer = Math.max(1.1, 4.5 - level * .7) * rand(.8, 1.2);
+          const dir = Math.random() < .5 ? 1 : -1;
+          const row = player.row + pick([0, 1, 1, 2, 2, 3]);
+          if (!getRow(row).safehouse) {                 // ins Safehouse fliegen Drohnen nicht
+            drones.push({ row, dir, x: dir > 0 ? -2 : COLS + 1, warn: .9, speed: 6 + level * .8 });
+            Sound.warn();
+          }
+        }
+      } else droneTimer = Math.max(droneTimer, 2);
+      updateHeatHud();
+      Sound.setIntensity(level);
+      if (combo > 0) {
+        comboTimer -= dt;
+        comboBar.style.transform = `scaleX(${Math.max(0, comboTimer / COMBO_WINDOW)})`;
+        if (comboTimer <= 0) { combo = 0; mult = 1; updateCombo(); }
+      }
+    }
+    for (const p of popups) { p.life -= dt; p.row += dt * .8; }
+    popups = popups.filter(p => p.life > 0);
+    if (state !== 'play') return;
+
+    if (player.hopT < 1) {
+      player.hopT = Math.min(1, player.hopT + dt * 1000 / HOP_MS);
+      if (player.hopT >= 1 && player.queued) { const q = player.queued; player.queued = null; move(q[0], q[1]); }
+    }
+
+    // Datenkanal: ab 60 % des Sprungs muss eine Plattform drunter sein, dann fährst du mit
+    const dr = getRow(player.row);
+    if (dr.type === 'data' && player.hopT >= .6) {
+      if (!onPlatform(player.row, player.col)) return die('data');
+      if (player.hopT >= 1) {
+        player.col += dr.dir * dr.speed * dt; player.fromCol = player.col;
+        if (player.col < -.35 || player.col > COLS - .65) return die('data');
+      }
+    }
+    // Im Safehouse steigen kühle Funken auf, solange Heat abkühlt
+    if (dr.safehouse && heat > 0 && Math.random() < dt * 14)
+      particles.push({ x: player.col + rand(.1, .9), y: player.row + .1, vx: 0, vy: rand(.8, 1.6), life: .7, max: .7, color: P.cyan, size: .05 });
+
+    const r = getRow(player.row);
+    if (r.type === 'road') {
+      const t = ease(player.hopT);
+      const px = player.fromCol + (player.col - player.fromCol) * t;
+      const a = px + 0.18, b = px + 0.82;
+      for (const c of r.cars) {
+        for (const off of [0, -r.span, r.span]) {
+          const cx = c.x - 4 + off;                 // Spur beginnt 4 Zellen links vom Bild
+          if (cx < b && cx + c.w > a) return die('car');
+        }
+      }
+    }
+
+    if (player.hopT >= 1) nearMiss(player.row, player.col, true);   // knapp hinter einem Auto gelandet
+    {
+      const t = ease(player.hopT);
+      const px = player.fromCol + (player.col - player.fromCol) * t;
+      for (const d of drones) {
+        if (d.warn <= 0 && d.row === player.row && d.x < px + .82 && d.x + .8 > px + .18) return die('drone');
+      }
+    }
+    const target = player.row - Math.floor(H / cell) * 0.32;
+    if (target > camRow) camRow += (target - camRow) * Math.min(1, dt * 4);
+  }
+  const ease = t => 1 - (1 - t) * (1 - t);
+
+  // ---------- Zeichnen ----------
+  function rowY(i) { return H - (i - camRow + 1) * cell; }
+  function blit(s, x, y) { ctx.drawImage(s.c, x - s.pad, y - s.pad, s.w, s.h); }
+
+  function draw(now) {
+    ctx.save();
+    if (shake > 0) ctx.translate(rand(-1, 1) * shake * 18, rand(-1, 1) * shake * 18);
+    ctx.fillStyle = P.night; ctx.fillRect(-20, -20, W + 40, H + 40);
+    const lo = Math.floor(camRow) - 1, hi = lo + Math.ceil(H / cell) + 3;
+    const t = now / 1000;
+
+    for (let i = lo; i <= hi; i++) {
+      const r = getRow(i), y = rowY(i);
+      if (r.type === 'data') {
+        // Datenstrom: tiefblau, fließende Lichtstreifen in Fahrtrichtung
+        ctx.fillStyle = '#060a33'; ctx.fillRect(0, y, W, cell + 1);
+        ctx.fillStyle = P.blue; ctx.globalAlpha = .35;
+        for (let k = 0; k < 7; k++) {
+          const span = COLS + 2, xx = (((t * r.speed * 1.4 * r.dir + k * 1.9 + i * .7) % span) + span) % span - 1;
+          ctx.fillRect(xx * cell, y + cell * (.15 + (k * .13) % .7), cell * (.4 + (k % 3) * .3), 1.5);
+        }
+        ctx.globalAlpha = 1;
+        if (getRow(i + 1).type !== 'data') { ctx.fillStyle = P.cyan; ctx.globalAlpha = .2; ctx.fillRect(0, y, W, 6); ctx.globalAlpha = 1; ctx.fillRect(0, y, W, 1.5); }
+        if (getRow(i - 1).type !== 'data') { ctx.fillStyle = P.cyan; ctx.globalAlpha = .2; ctx.fillRect(0, y + cell - 6, W, 6); ctx.globalAlpha = 1; ctx.fillRect(0, y + cell - 1.5, W, 1.5); }
+        for (const p of r.plats) {
+          const ps = platSprite(p.w);
+          for (const off of [0, -r.span]) {
+            const x = (p.x - 4 + off) * cell;
+            if (x > W + cell || x + p.w * cell < -cell) continue;
+            blit(ps, x + 3, y + cell * .17);
+          }
+        }
+        continue;
+      }
+      if (r.safehouse) {
+        ctx.fillStyle = '#0f1446'; ctx.fillRect(0, y, W, cell + 1);
+        ctx.fillStyle = 'rgba(5, 217, 232, .08)';
+        for (let x = 0; x < COLS; x++) ctx.fillRect(x * cell + 2, y + 2, cell - 4, cell - 4);
+        ctx.fillStyle = P.cyan; ctx.globalAlpha = .5 + .2 * Math.sin(t * 2);
+        ctx.fillRect(0, y, W, 1.5); ctx.fillRect(0, y + cell - 1.5, W, 1.5);
+        ctx.globalAlpha = .85;
+        blit(safehouseSprite(), (W - Math.round(cell * 3.2)) / 2, y + cell * .25);
+        ctx.globalAlpha = 1;
+        continue;
+      }
+      if (r.type === 'road') {
+        ctx.fillStyle = P.asphalt; ctx.fillRect(0, y, W, cell + 1);
+        // Neon-Bordsteine an den Rändern eines Highway-Blocks
+        // (Glow ohne shadowBlur: breiter, schwacher Streifen + dünne helle Linie)
+        if (getRow(i + 1).type !== 'road') {
+          ctx.fillStyle = P.magenta; ctx.globalAlpha = .18; ctx.fillRect(0, y, W, 7);
+          ctx.globalAlpha = 1; ctx.fillRect(0, y, W, 2);
+        }
+        if (getRow(i - 1).type !== 'road') {
+          ctx.fillStyle = P.blue; ctx.globalAlpha = .18; ctx.fillRect(0, y + cell - 7, W, 7);
+          ctx.globalAlpha = 1; ctx.fillRect(0, y + cell - 2, W, 2);
+        }
+        // Spurmarkierung, leicht leuchtend
+        ctx.fillStyle = 'rgba(5, 217, 232, .22)';
+        const dash = (t * r.speed * r.dir * .25 % 1 + 1) % 1;
+        for (let x = -1; x <= COLS; x++) ctx.fillRect((x + dash) * cell + cell * .3, y + cell - 1.5, cell * .4, 1.5);
+      } else {
+        ctx.fillStyle = P.alley; ctx.fillRect(0, y, W, cell + 1);
+        // Gehwegplatten
+        ctx.fillStyle = 'rgba(166, 77, 255, .12)';
+        for (let x = 0; x < COLS; x++) ctx.fillRect(x * cell + 1, y + 1, cell - 2, cell - 2);
+        // Neon-Schilder (flackern)
+        for (const d of r.decor) {
+          const flick = Math.sin(t * 3 + d.ph) > -.85 || Math.random() < .3;
+          if (!flick) continue;
+          ctx.globalAlpha = .55;
+          blit(signSprite(d.color, d.len), d.x * cell, y + (d.top ? cell * .12 : cell * .8));
+          ctx.globalAlpha = 1;
+        }
+      }
+    }
+    // Beute
+    for (let i = lo; i <= hi; i++) {
+      const r = getRow(i);
+      if (r.loot < 0) continue;
+      const ls = lootSprite(), s = Math.round(cell * .34);
+      const bob = Math.sin(t * 4 + i) * cell * .05;
+      blit(ls, r.loot * cell + (cell - s) / 2, rowY(i) + (cell - s) / 2 + bob);
+    }
+    // Drohnen-Warnung: Reihe blinkt rot/blau, bevor die Drohne kommt
+    for (const d of drones) {
+      if (d.warn <= 0) continue;
+      ctx.globalAlpha = .22 + .12 * Math.sin(t * 30);
+      ctx.fillStyle = Math.floor(t * 8) % 2 ? P.magenta : P.blue;
+      ctx.fillRect(0, rowY(d.row), W, cell);
+      ctx.globalAlpha = 1;
+    }
+    // Fahrzeuge (Hover-Taxis bzw. Geldtransporter)
+    for (let i = lo; i <= hi; i++) {
+      const r = getRow(i);
+      if (r.type !== 'road') continue;
+      const y = rowY(i), bob = Math.sin(t * 6 + i) * cell * .02;
+      for (const c of r.cars) {
+        const s = carSprite(c.w, r.color, r.dir, r.truck);
+        for (const off of [0, -r.span]) {
+          const x = (c.x - 4 + off) * cell;
+          if (x > W + cell || x + c.w * cell < -cell) continue;
+          blit(s, x + 2, y + cell * .19 + bob);
+        }
+      }
+    }
+    // Spielfigur
+    const e = ease(player.hopT);
+    const px = (player.fromCol + (player.col - player.fromCol) * e) * cell;
+    const py = rowY(player.fromRow + (player.row - player.fromRow) * e);
+    const lift = Math.sin(player.hopT * Math.PI) * cell * .2;
+    const ps = playerSprite(state === 'dead');
+    const s = Math.round(cell * .6);
+    if (state !== 'dead' || performance.now() - deadAt < 120) {
+      ctx.fillStyle = 'rgba(0,0,0,.45)';
+      ctx.beginPath(); ctx.ellipse(px + cell / 2, py + cell * .82, s * .42, s * .12, 0, 0, Math.PI * 2); ctx.fill();
+      blit(ps, px + (cell - s) / 2, py + (cell - s) / 2 - lift);
+    }
+    // Stadt-Dunst: pink von oben, blau von unten, violett an den Seiten
+    ctx.globalCompositeOperation = 'lighter';
+    if (!haze || haze.h !== H) {
+      const g1 = ctx.createLinearGradient(0, 0, 0, H);
+      g1.addColorStop(0, 'rgba(255, 42, 109, .22)'); g1.addColorStop(.35, 'rgba(166, 77, 255, .04)');
+      g1.addColorStop(.7, 'rgba(61, 90, 254, .04)'); g1.addColorStop(1, 'rgba(61, 90, 254, .26)');
+      const g2 = ctx.createLinearGradient(0, 0, W, 0);
+      g2.addColorStop(0, 'rgba(166, 77, 255, .16)'); g2.addColorStop(.2, 'rgba(0,0,0,0)');
+      g2.addColorStop(.8, 'rgba(0,0,0,0)'); g2.addColorStop(1, 'rgba(5, 217, 232, .12)');
+      haze = { h: H, g1, g2 };
+    }
+    ctx.fillStyle = haze.g1; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = haze.g2; ctx.fillRect(0, 0, W, H);
+    // Drohnen
+    for (const d of drones) {
+      if (d.warn > 0) continue;
+      const y = rowY(d.row) + cell * .29 + Math.sin(t * 10 + d.row) * cell * .03;
+      blit(droneSprite(), d.x * cell, y);
+      const on = Math.floor(t * 10) % 2;
+      ctx.fillStyle = on ? '#ff2a4d' : P.blue; ctx.fillRect(d.x * cell + cell * .3, y - 3, cell * .08, 4);
+      ctx.fillStyle = on ? P.blue : '#ff2a4d'; ctx.fillRect(d.x * cell + cell * .42, y - 3, cell * .08, 4);
+      // Scanner-Kegel
+      ctx.fillStyle = 'rgba(255, 42, 109, .12)';
+      ctx.beginPath(); ctx.moveTo(d.x * cell + cell * .4, y + cell * .4);
+      ctx.lineTo(d.x * cell - cell * .05, y + cell * .7); ctx.lineTo(d.x * cell + cell * .85, y + cell * .7); ctx.fill();
+    }
+    // Sirenen-Licht ab Heat 2
+    const lvl = Math.floor(heat);
+    if (lvl >= 2 && state === 'play') {
+      ctx.fillStyle = Math.floor(t * 4) % 2 ? P.magenta : P.blue;
+      ctx.globalAlpha = .025 * lvl * (.6 + .4 * Math.sin(t * 8));
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalAlpha = 1;
+    }
+    // Partikel
+    for (const p of particles) {
+      ctx.globalAlpha = Math.max(0, p.life / p.max);
+      ctx.fillStyle = p.color;
+      const sz = p.size * cell;
+      ctx.fillRect(p.x * cell - sz / 2, rowY(p.y) + cell / 2 - sz / 2, sz, sz);
+    }
+    // Schwebende Texte
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.textAlign = 'center';
+    ctx.font = `900 ${Math.round(cell * .32)}px Orbitron, sans-serif`;
+    for (const p of popups) {
+      ctx.globalAlpha = Math.min(1, p.life * 2);
+      ctx.fillStyle = p.color; ctx.fillText(p.text, p.x * cell, rowY(p.row) + cell * .5);
+    }
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'lighter';
+    // Regen
+    ctx.globalAlpha = .22; ctx.strokeStyle = P.violet; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const d of rain) { const x = d.x * W, y = d.y * H; ctx.moveTo(x, y); ctx.lineTo(x - d.len * H * .12, y + d.len * H); }
+    ctx.stroke();
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    ctx.restore();
+
+    // Glitch beim Tod: horizontale Streifen verschieben
+    if (glitch > 0) {
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+      const cw = canvas.width, ch = canvas.height;
+      for (let k = 0; k < 7; k++) {
+        const sy = Math.random() * ch, sh = rand(4, 28) * dpr, dx = rand(-30, 30) * dpr;
+        ctx.drawImage(canvas, 0, sy, cw, sh, dx, sy, cw, sh);
+      }
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = glitch * .35;
+      ctx.fillStyle = P.magenta; ctx.fillRect(0, 0, cw, ch);
+      ctx.restore();
+    }
+  }
+
+  function frame(now) {
+    const dt = Math.min(0.05, (now - (lastT || now)) / 1000);
+    lastT = now;
+    const ts = slow > 0 ? .4 : 1;                  // kurze Zeitlupe nach einem Near-Miss
+    slow = Math.max(0, slow - dt);
+    update(dt * ts);
+    draw(now);
+    requestAnimationFrame(frame);
+  }
+
+  state = 'menu';
+  reset();
+  document.getElementById('start').addEventListener('pointerup', e => { e.stopPropagation(); handleOverlayTap(); });
+  document.getElementById('over').addEventListener('pointerup', e => { e.stopPropagation(); handleOverlayTap(); });
+  requestAnimationFrame(frame);
+})();
+</script>
