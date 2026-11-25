@@ -33,11 +33,16 @@
     -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
   }
   #game { display: block; width: 100%; height: 100%; }
+  #haze {
+    position: fixed; inset: 0; pointer-events: none;
+    background:
+      linear-gradient(to bottom, rgb(255 42 109 / .16), rgb(166 77 255 / .03) 35%, rgb(61 90 254 / .03) 70%, rgb(61 90 254 / .2)),
+      linear-gradient(to right, rgb(166 77 255 / .12), transparent 20%, transparent 80%, rgb(5 217 232 / .09));
+  }
   /* Scanlines über allem */
   body::after {
     content: ""; position: fixed; inset: 0; pointer-events: none;
-    background: repeating-linear-gradient(to bottom, rgb(255 255 255 / .025) 0 1px, transparent 1px 3px);
-    mix-blend-mode: overlay;
+    background: repeating-linear-gradient(to bottom, rgb(255 255 255 / .018) 0 1px, transparent 1px 3px);
   }
   .hud {
     position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0;
@@ -136,6 +141,7 @@
 </style>
 
 <canvas id="game"></canvas>
+<div id="haze"></div>
 <div class="hud">
   <div class="col">
     <div id="score">0</div>
@@ -156,7 +162,7 @@
   <h1>NEON HUSTLE</h1>
   <p><b>Tippen</b> = vorwärts · <b>Wischen</b> = links, rechts, zurück</p>
   <p>Am Rechner: Pfeiltasten · M = Ton</p>
-  <p><b>Datenkanal</b>: nur auf Server-Plattformen landen. <b>Safehouse</b>: hier kühlt Heat schnell ab, Drohnen kommen nicht rein.</p>
+  <p><b>Datenkanal</b>: auf die leuchtenden Pads springen, nicht in den Strom. <b>Safehouse</b>: hier kühlt Heat schnell ab, Drohnen kommen nicht rein.</p>
   <p>Ohne Pause vorwärts = <b>Combo-Multiplikator</b>. Knapp an Autos vorbei = <b style="color:var(--magenta)">Bonus</b>.</p>
   <p><b style="color:var(--gold)">◆ Beute</b> gibt Punkte, macht dich aber heiß. Mehr <b style="color:var(--magenta)">Heat</b> heißt: schnellerer Verkehr und Polizei-Drohnen. Wer untertaucht, kühlt ab.</p>
   <p class="big">Tippen zum Starten</p>
@@ -403,23 +409,25 @@
       g.fillStyle = P.gold; g.beginPath(); g.arc(w / 2, h / 2, w * .14, 0, Math.PI * 2); g.fill();
     });
   }
-  function platSprite(wCells) {
-    const w = Math.round(wCells * cell) - 6, h = Math.round(cell * .66);
-    return sprite(`plat|${w}`, w, h, cell * .3, (g, w, h) => {
-      g.shadowColor = P.cyan; g.shadowBlur = cell * .3;
-      g.fillStyle = P.cyan; g.globalAlpha = .25; rr(g, 0, h * .6, w, h * .5, 4); g.fill(); g.globalAlpha = 1;
-      g.shadowBlur = cell * .12;
-      g.fillStyle = '#120a35'; g.strokeStyle = P.blue; g.lineWidth = 2;
-      rr(g, 0, 0, w, h, 4); g.fill(); g.stroke();
+  // Hover-Pad: helle, begehbare Fläche mit Pfeilen in Fließrichtung – soll nach "drauf springen" aussehen, nicht nach Zug
+  function platSprite(wCells, dir) {
+    const w = Math.round(wCells * cell) - 6, h = Math.round(cell * .7);
+    return sprite(`plat|${w}|${dir}`, w, h, cell * .3, (g, w, h) => {
+      g.shadowColor = P.cyan; g.shadowBlur = cell * .35;
+      g.fillStyle = 'rgba(5, 217, 232, .22)'; g.strokeStyle = P.cyan; g.lineWidth = 2.5;
+      rr(g, 0, 0, w, h, h * .22); g.fill(); g.stroke();
       g.shadowBlur = 0;
-      // Server-Einschübe mit LEDs
-      const slots = Math.max(2, Math.round(w / (cell * .5)));
-      for (let k = 0; k < slots; k++) {
-        const x = 5 + k * (w - 10) / slots;
-        g.fillStyle = 'rgba(61, 90, 254, .25)'; g.fillRect(x + 1, h * .2, (w - 10) / slots - 3, h * .6);
-        g.fillStyle = k % 3 === 0 ? P.magenta : P.cyan;
-        g.fillRect(x + 3, h * .3, 3, 3); g.fillRect(x + 3, h * .62, 3, 3);
+      // Raster wie eine Landefläche
+      g.strokeStyle = 'rgba(5, 217, 232, .35)'; g.lineWidth = 1;
+      for (let x = cell * .5; x < w - 4; x += cell * .5) { g.beginPath(); g.moveTo(x, 4); g.lineTo(x, h - 4); g.stroke(); }
+      g.beginPath(); g.moveTo(4, h / 2); g.lineTo(w - 4, h / 2); g.stroke();
+      // Pfeile in Fließrichtung
+      g.strokeStyle = '#e9f6ff'; g.lineWidth = 2; g.globalAlpha = .7;
+      for (let x = cell * .45; x < w - cell * .3; x += cell * .9) {
+        const cx = x, a = h * .22, d = dir * h * .14;
+        g.beginPath(); g.moveTo(cx - d, h / 2 - a); g.lineTo(cx + d, h / 2); g.lineTo(cx - d, h / 2 + a); g.stroke();
       }
+      g.globalAlpha = 1;
     });
   }
   function safehouseSprite() {
@@ -451,7 +459,6 @@
   // ---------- Welt ----------
   let rows, player, camRow, score, state, deadAt, lastT, shake = 0, glitch = 0;
   let particles = [];
-  let haze = null;
   // ---------- Events ----------
   // Ein Event kündigt sich 1,6 s an (Banner), läuft dann eine Weile, danach Pause bis zum nächsten.
   const EVENTS = {
@@ -461,6 +468,8 @@
   };
   const EVENT_WARN = 1.6;
   let ev = null, evNext = 0, evLast = '', blackoutK = 0;
+  let runs = 0, dataHintShown = false, hintLeft = 0;
+  try { runs = +localStorage.getItem('nh-runs') || 0; } catch (e) {}
   let points = 0, combo = 0, comboTimer = 0, mult = 1, hopId = 0, nmHop = -1, slow = 0, popups = [];
   let lastSafehouse = 0, inSafehouse = false;
   let heat = 0, loot = 0, drones = [], droneTimer = 3, heatShown = -1, cause = '';
@@ -484,7 +493,7 @@
     while (x < COLS + 8) {
       const w = pick([2, 2.5, 3]);
       plats.push({ x, w });
-      x += w + rand(1.1, 2.3);                     // Lücken klein genug, dass bald eine Plattform kommt
+      x += w + rand(1, 1.9);                     // Lücken klein genug, dass bald eine Plattform kommt
     }
     return { type: 'data', dir, speed, plats, span: x, run: prev.type === 'data' ? prev.run + 1 : 1, decor: [] };
   }
@@ -515,18 +524,20 @@
     }
     const roadChance = prev && prev.type === 'safe' ? 0.8 : 0.62;
     if (Math.random() > roadChance) return { type: 'safe', decor };
-    const level = Math.min(i / 160, 1);           // wird mit der Zeit schneller
+    const level = Math.min(i / 220, 1);           // wird mit der Zeit schneller (langsamer Anstieg)
     const dir = Math.random() < 0.5 ? -1 : 1;
-    const speed = rand(1.1, 2.1) + level * 2.0;    // Zellen pro Sekunde
-    const isTruck = i > 8 && Math.random() < 0.14;
+    let speed = rand(1.0, 1.9) + level * 1.7;      // Zellen pro Sekunde
+    // Laster: selten, nie zwei Laster-Spuren direkt hintereinander, und langsamer als Autos
+    const isTruck = i > 10 && !(prev && prev.truck) && Math.random() < 0.08;
+    if (isTruck) speed *= .75;
     const span = COLS + 8;                          // Spurlänge inkl. Rand
     const cars = [];
     const color = isTruck ? P.violet : pick(CAR_COLORS);
     let x = rand(0, 3);
     while (x < span - 2) {
-      const w = isTruck ? pick([1.9, 2.3]) : pick([1.1, 1.3]);
+      const w = isTruck ? pick([1.6, 1.9]) : pick([1.1, 1.3]);
       cars.push({ x, w });
-      x += w + rand(isTruck ? 3.2 : 2.6, 5.6);       // großzügige Lücken → fair
+      x += w + rand(isTruck ? 4 : 3, isTruck ? 6.5 : 6);   // großzügige Lücken → immer ein Durchkommen
     }
     return { type: 'road', dir, speed, cars, span, truck: isTruck, color };
   }
@@ -542,7 +553,8 @@
     camRow = -2;
     score = 0; particles = []; shake = 0; glitch = 0;
     heat = 0; loot = 0; drones = []; droneTimer = 3; heatShown = -1;
-    endEvent(true); evNext = rand(14, 22); evLast = ''; blackoutK = 0;
+    endEvent(true); evNext = rand(14, 22);
+    dataHintShown = runs >= 3; hintLeft = 0; evLast = ''; blackoutK = 0;
     points = 0; combo = 0; comboTimer = 0; mult = 1; hopId = 0; nmHop = -1; slow = 0; popups = [];
     updateCombo();
     updateHud();
@@ -559,7 +571,7 @@
   // ---------- Eingabe ----------
   function move(dc, dr) {
     if (state !== 'play') return;
-    if (player.hopT < .6) { player.queued = [dc, dr]; return; } // ab 60 % des Sprungs gleich weiter
+    if (player.hopT < .5) { player.queued = [dc, dr]; return; } // ab 50 % des Sprungs gleich weiter
     const nc = Math.round(player.col) + dc, nr = player.row + dr;
     if (nc < 0 || nc >= COLS) return;
     if (nr < Math.floor(camRow)) return;           // nicht aus dem Bild nach unten
@@ -622,6 +634,7 @@
   function handleOverlayTap() {
     if (state === 'dead' && performance.now() - deadAt < 600) return; // kein versehentlicher Neustart
     Sound.init(); Sound.duck(false);
+    runs++; try { localStorage.setItem('nh-runs', runs); } catch (e) {}
     reset();
     document.getElementById('start').hidden = true;
     document.getElementById('over').hidden = true;
@@ -760,7 +773,7 @@
   // ---------- Update ----------
   function update(dt) {
     const level = Math.floor(heat);
-    const speedMult = (1 + level * .12) * (evActive('rush') ? 1.45 : 1);
+    const speedMult = (1 + level * .08) * (evActive('rush') ? 1.3 : 1);
     const lo = Math.floor(camRow) - 2, hi = lo + Math.ceil(H / cell) + 4;
     for (let i = lo; i <= hi; i++) {
       const r = getRow(i);
@@ -788,6 +801,14 @@
     drones = drones.filter(d => d.x > -3 && d.x < COLS + 3);
     if (state === 'play') {
       // Event-Ablauf: erst ab Reihe 12
+      if (!dataHintShown && !ev && getRow(player.row + 2).type === 'data') {
+        dataHintShown = true; hintLeft = 2.2;
+        document.documentElement.style.setProperty('--ev', P.cyan);
+        document.getElementById('bannerTitle').textContent = 'DATENKANAL';
+        document.getElementById('bannerSub').textContent = 'Auf die Pads springen – der Strom löscht dich';
+        bannerEl.hidden = false;
+      }
+      if (hintLeft > 0) { hintLeft -= dt; if (hintLeft <= 0 && !ev) bannerEl.hidden = true; }
       if (!ev && player.maxRow >= 12) { evNext -= dt; if (evNext <= 0) startEvent(); }
       if (ev) {
         if (ev.warn > 0) { ev.warn -= dt; if (ev.warn <= 0) activateEvent(); }
@@ -830,7 +851,7 @@
 
     if (player.hopT < 1) {
       player.hopT = Math.min(1, player.hopT + dt * 1000 / HOP_MS);
-      if (player.hopT >= 1 && player.queued) { const q = player.queued; player.queued = null; move(q[0], q[1]); }
+      if (player.hopT >= .5 && player.queued) { const q = player.queued; player.queued = null; move(q[0], q[1]); }
     }
 
     // Datenkanal: ab 60 % des Sprungs muss eine Plattform drunter sein, dann fährst du mit
@@ -868,7 +889,7 @@
       }
     }
     const target = player.row - Math.floor(H / cell) * 0.32;
-    if (target > camRow) camRow += (target - camRow) * Math.min(1, dt * 4);
+    if (target > camRow) camRow += (target - camRow) * Math.min(1, dt * 6);
   }
   const ease = t => 1 - (1 - t) * (1 - t);
 
@@ -888,8 +909,8 @@
       if (r.type === 'data') {
         // Datenstrom: tiefblau, fließende Lichtstreifen in Fahrtrichtung
         ctx.fillStyle = '#060a33'; ctx.fillRect(0, y, W, cell + 1);
-        ctx.fillStyle = P.blue; ctx.globalAlpha = .35;
-        for (let k = 0; k < 7; k++) {
+        ctx.fillStyle = P.magenta; ctx.globalAlpha = .45;
+        for (let k = 0; k < 11; k++) {
           const span = COLS + 2, xx = (((t * r.speed * 1.4 * r.dir + k * 1.9 + i * .7) % span) + span) % span - 1;
           ctx.fillRect(xx * cell, y + cell * (.15 + (k * .13) % .7), cell * (.4 + (k % 3) * .3), 1.5);
         }
@@ -897,11 +918,11 @@
         if (getRow(i + 1).type !== 'data') { ctx.fillStyle = P.cyan; ctx.globalAlpha = .2; ctx.fillRect(0, y, W, 6); ctx.globalAlpha = 1; ctx.fillRect(0, y, W, 1.5); }
         if (getRow(i - 1).type !== 'data') { ctx.fillStyle = P.cyan; ctx.globalAlpha = .2; ctx.fillRect(0, y + cell - 6, W, 6); ctx.globalAlpha = 1; ctx.fillRect(0, y + cell - 1.5, W, 1.5); }
         for (const p of r.plats) {
-          const ps = platSprite(p.w);
+          const ps = platSprite(p.w, r.dir);
           for (const off of [0, -r.span]) {
             const x = (p.x - 4 + off) * cell;
             if (x > W + cell || x + p.w * cell < -cell) continue;
-            blit(ps, x + 3, y + cell * .17);
+            blit(ps, x + 3, y + cell * .15);
           }
         }
         continue;
@@ -991,18 +1012,8 @@
       blit(ps, px + (cell - s) / 2, py + (cell - s) / 2 - lift);
     }
     // Stadt-Dunst: pink von oben, blau von unten, violett an den Seiten
+    // (Stadt-Dunst liegt als CSS-Ebene #haze über dem Canvas – kostet so keine Rechenzeit pro Frame)
     ctx.globalCompositeOperation = 'lighter';
-    if (!haze || haze.h !== H) {
-      const g1 = ctx.createLinearGradient(0, 0, 0, H);
-      g1.addColorStop(0, 'rgba(255, 42, 109, .22)'); g1.addColorStop(.35, 'rgba(166, 77, 255, .04)');
-      g1.addColorStop(.7, 'rgba(61, 90, 254, .04)'); g1.addColorStop(1, 'rgba(61, 90, 254, .26)');
-      const g2 = ctx.createLinearGradient(0, 0, W, 0);
-      g2.addColorStop(0, 'rgba(166, 77, 255, .16)'); g2.addColorStop(.2, 'rgba(0,0,0,0)');
-      g2.addColorStop(.8, 'rgba(0,0,0,0)'); g2.addColorStop(1, 'rgba(5, 217, 232, .12)');
-      haze = { h: H, g1, g2 };
-    }
-    ctx.fillStyle = haze.g1; ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = haze.g2; ctx.fillRect(0, 0, W, H);
     // Drohnen
     for (const d of drones) {
       if (d.warn > 0) continue;
@@ -1046,9 +1057,7 @@
           if (x0 > W + cell * 2 || x0 + c.w * cell < -cell * 2) continue;
           const front = r.dir > 0 ? x0 + c.w * cell - 4 : x0 + 4, back = r.dir > 0 ? x0 + 4 : x0 + c.w * cell - 4;
           // Lichtkegel nach vorne
-          const beam = ctx.createLinearGradient(front, 0, front + r.dir * cell * 1.6, 0);
-          beam.addColorStop(0, 'rgba(255, 246, 214, .35)'); beam.addColorStop(1, 'rgba(255, 246, 214, 0)');
-          ctx.fillStyle = beam;
+          ctx.fillStyle = 'rgba(255, 246, 214, .16)';
           ctx.beginPath(); ctx.moveTo(front, y - cell * .12); ctx.lineTo(front + r.dir * cell * 1.6, y - cell * .38);
           ctx.lineTo(front + r.dir * cell * 1.6, y + cell * .38); ctx.lineTo(front, y + cell * .12); ctx.fill();
           ctx.fillStyle = '#fff6d6'; ctx.fillRect(front - 2, y - cell * .2, 4, cell * .12); ctx.fillRect(front - 2, y + cell * .08, 4, cell * .12);
