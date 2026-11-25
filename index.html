@@ -401,6 +401,9 @@
         if (type === 'blackout') { tone('sawtooth', 420, 30, 1.1, .3); noise(.9, .3, 2000, 80, 0, sfx, 'lowpass'); }
         if (type === 'rush') { [0, .22].forEach(d => { tone('square', 392, 0, .18, .12, t0 + d); tone('square', 494, 0, .18, .1, t0 + d); }); }
         if (type === 'razzia') { for (let k = 0; k < 3; k++) { tone('sawtooth', 600, 1100, .25, .1, t0 + k * .5); tone('sawtooth', 1100, 600, .25, .1, t0 + k * .5 + .25); } }
+        if (type === 'ampel') { [0, .18, .36].forEach(d => tone('square', 660, 0, .1, .1, t0 + d)); }
+        if (type === 'nebel') { tone('sine', 110, 70, 1.4, .3); noise(1.2, .25, 600, 200, 0, sfx, 'lowpass'); }
+        if (type === 'gold' || type === 'express' || type === 'konvoi') { [0, 5, 9, 12].forEach((n, k) => tone(type === 'konvoi' ? 'sawtooth' : 'triangle', hz((type === 'konvoi' ? 48 : 76) + n), 0, .16, .12, t0 + k * .08)); }
         if (type === 'win') { [0, 4, 7, 12, 16].forEach((n, k) => tone('triangle', hz(72 + n), 0, .14, .14, t0 + k * .06)); }
       },
       duck(on) { if (ac) music.gain.setTargetAtTime(on ? .06 : .22, ac.currentTime, .15); },
@@ -432,6 +435,14 @@
   const COLS = 9;
   const COMBO_WINDOW = 1.1;   // Sekunden bis die Combo verfällt
   const HOP_MS = 75;          // Dauer eines Hüpfers in ms (kleiner = flinker)
+  // Faire Treffer: nur die Mitte deines Feldes zählt, Fahrzeuge sind an den Enden etwas „weicher“
+  const HIT_PAD = .26;        // so viel vom Feldrand links/rechts zählt NICHT als Treffer (0–0,5)
+  const CAR_SHRINK = .1;      // Fahrzeuge zählen an jedem Ende so viel kürzer, als sie aussehen
+  const PAD_GRACE = .15;      // Datenkanal: so weit darfst du neben einem Pad landen und trotzdem stehen
+  const DRONE_WARN = 1.2;     // Sekunden Vorwarnung, bevor eine Drohne durch die Reihe fliegt
+  // Verkehr (kleiner = leichter)
+  const TRAFFIC_SPEED = .85;  // Grundtempo aller Fahrzeuge
+  const TRAFFIC_DENSITY = .93; // wie oft eine Reihe zur Straße wird
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   const css = getComputedStyle(document.documentElement);
@@ -470,9 +481,9 @@
     g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
   }
 
-  function carSprite(wCells, color, dir, truck) {
+  function carSprite(wCells, color, dir, truck, style) {
     const w = Math.round(wCells * cell) - 4, h = Math.round(cell * 0.62);
-    return sprite(`car|${w}|${color}|${dir}|${truck}`, w, h, cell * 0.35, (g, w, h) => {
+    return sprite(`car|${w}|${color}|${dir}|${truck}|${style}`, w, h, cell * 0.35, (g, w, h) => {
       // Alles wird nach rechts fahrend gezeichnet und bei Bedarf gespiegelt
       if (dir < 0) { g.translate(w, 0); g.scale(-1, 1); }
       // Unterboden-Glow (Hover)
@@ -498,28 +509,39 @@
         g.shadowColor = '#ff2a4d'; g.fillStyle = '#ff2a4d';
         g.fillRect(0, h * .1, 2, h * .8);
       } else {
-        // E-Limousine: flache, lange Form, Glasdach, durchgehende Lichtleisten
-        g.shadowBlur = cell * .15; g.strokeStyle = color; g.lineWidth = 2;
-        g.fillStyle = '#0b0320';
-        g.beginPath();
-        g.moveTo(w * .06, h * .1);
-        g.quadraticCurveTo(w * .5, -h * .04, w * .9, h * .1);   // Seite oben
-        g.quadraticCurveTo(w * 1.01, h * .5, w * .9, h * .9);   // runde Front
-        g.quadraticCurveTo(w * .5, h * 1.04, w * .06, h * .9);  // Seite unten
-        g.quadraticCurveTo(-w * .01, h * .5, w * .06, h * .1);  // Heck
-        g.closePath(); g.fill(); g.stroke();
-        g.shadowBlur = 0;
-        // Panorama-Glasdach
-        const roof = g.createLinearGradient(w * .25, 0, w * .75, 0);
-        roof.addColorStop(0, 'rgba(255,255,255,.05)'); roof.addColorStop(.6, color); roof.addColorStop(1, 'rgba(255,255,255,.15)');
-        g.fillStyle = roof; g.globalAlpha = .45;
-        rr(g, w * .26, h * .2, w * .46, h * .6, h * .22); g.fill();
-        g.globalAlpha = 1;
-        // Lichtleisten vorne (weiß) und hinten (rot), über die ganze Breite
-        g.shadowColor = '#e9f6ff'; g.shadowBlur = cell * .2; g.fillStyle = '#e9f6ff';
-        rr(g, w * .9, h * .2, 2.5, h * .6, 1.2); g.fill();
-        g.shadowColor = '#ff2a4d'; g.fillStyle = '#ff2a4d';
-        rr(g, w * .035, h * .18, 2.5, h * .64, 1.2); g.fill();
+        // Autos: gefüllte Karosserie in Bezirksfarbe, dunkle Scheiben, Räder – von oben klar als Auto lesbar
+        g.shadowBlur = 0; g.fillStyle = '#3a3450';                       // Räder (heller als der Asphalt, damit man sie sieht)
+        for (const wx of [w * .15, w * .68]) {
+          rr(g, wx, -h * .07, w * .16, h * .22, 2); g.fill();
+          rr(g, wx, h * .85, w * .16, h * .22, 2); g.fill();
+        }
+        g.shadowColor = color; g.shadowBlur = cell * .12; g.fillStyle = color;
+        g.strokeStyle = 'rgba(0, 0, 0, .55)'; g.lineWidth = 1.5;
+        if (style === 'classic') {
+          // Klassiker: kantige Karosserie, lange Motorhaube, Chrom-Stoßstangen, runde Scheinwerfer
+          rr(g, w * .04, h * .06, w * .92, h * .88, h * .14); g.fill(); g.stroke();
+          g.shadowBlur = 0;
+          g.fillStyle = 'rgba(255, 255, 255, .25)'; g.fillRect(w * .66, h * .49, w * .26, 1.5);   // Motorhauben-Falz
+          g.fillStyle = '#0b0320';
+          g.beginPath(); g.moveTo(w * .5, h * .2); g.lineTo(w * .62, h * .27); g.lineTo(w * .62, h * .73); g.lineTo(w * .5, h * .8); g.closePath(); g.fill();   // Frontscheibe
+          g.beginPath(); g.moveTo(w * .22, h * .27); g.lineTo(w * .32, h * .2); g.lineTo(w * .32, h * .8); g.lineTo(w * .22, h * .73); g.closePath(); g.fill(); // Heckscheibe
+          g.fillStyle = 'rgba(255, 255, 255, .16)'; rr(g, w * .33, h * .22, w * .16, h * .56, 3); g.fill();   // Dach
+          g.fillStyle = '#dfe2f3'; g.fillRect(w * .95, h * .12, w * .035, h * .76); g.fillRect(w * .015, h * .12, w * .035, h * .76); // Chrom
+          g.shadowColor = '#fff2b3'; g.shadowBlur = cell * .2; g.fillStyle = '#fff2b3';
+          for (const y of [h * .25, h * .75]) { g.beginPath(); g.arc(w * .9, y, h * .085, 0, Math.PI * 2); g.fill(); }
+          g.shadowColor = '#ff2a4d'; g.fillStyle = '#ff2a4d';
+          g.fillRect(w * .06, h * .14, 3, h * .14); g.fillRect(w * .06, h * .72, 3, h * .14);
+        } else {
+          // Modern: stromlinienförmig, durchgehendes Glasdach, Lichtleisten vorne und hinten
+          rr(g, w * .03, h * .08, w * .94, h * .84, h * .38); g.fill(); g.stroke();
+          g.shadowBlur = 0;
+          g.fillStyle = '#0b0320'; rr(g, w * .28, h * .18, w * .44, h * .64, h * .2); g.fill();          // Glasdach
+          g.fillStyle = 'rgba(255, 255, 255, .25)'; rr(g, w * .6, h * .24, w * .08, h * .52, 3); g.fill(); // Spiegelung
+          g.shadowColor = '#e9f6ff'; g.shadowBlur = cell * .2; g.fillStyle = '#e9f6ff';
+          rr(g, w * .91, h * .2, 2.5, h * .6, 1.2); g.fill();
+          g.shadowColor = '#ff2a4d'; g.fillStyle = '#ff2a4d';
+          rr(g, w * .045, h * .2, 2.5, h * .6, 1.2); g.fill();
+        }
       }
     });
   }
@@ -529,7 +551,7 @@
     const s = Math.round(cell * 0.6);
     return sprite(`player|${s}|${dead}|${outfit.id}`, s, s, cell * 0.3, (g, w, h) => {
       const rim = dead ? '#ff3b3b' : outfit.rim;
-      // Hoodie – alleen kleuren wisselen, zodat outfits puur cosmetisch blijven
+      // Hoodie – Outfits ändern nur die Farben, sie bleiben rein kosmetisch
       g.shadowColor = rim; g.shadowBlur = cell * .22;
       g.fillStyle = outfit.hoodie; g.strokeStyle = rim; g.lineWidth = 2.2;
       g.beginPath();
@@ -666,10 +688,17 @@
   const EVENTS = {
     blackout: { title: 'BLACKOUT', sub: 'Stromausfall: Drohnen sehen dich nicht, Heat kühlt ab', dur: 10, color: '#3d5afe' },
     rush:     { title: 'RUSH HOUR', sub: 'Verkehr gibt Gas: Beute zählt doppelt', dur: 12, color: '#ff2a6d' },
-    razzia:   { title: 'RAZZIA', sub: 'Heat +2, Drohnenstaffel: überleben = Bonus', dur: 8, color: '#a64dff' }
+    razzia:   { title: 'RAZZIA', sub: 'Heat +2, Drohnenstaffel: überleben = Bonus', dur: 8, color: '#a64dff' },
+    // Signature-Events: kommen nur in „ihrem“ Bezirk (district) und machen ihn spielerisch eigen
+    ampel:    { title: 'AMPEL-HACK', sub: 'Alle Ampeln auf Rot: der Verkehr kriecht – jetzt rüber!', dur: 6, color: '#05d9e8', district: 'sektor7' },
+    nebel:    { title: 'HAFENNEBEL', sub: 'Kaum Sicht – aber Drohnen verlieren dich, Heat kühlt ab', dur: 10, color: '#7df9ff', district: 'hafen9' },
+    gold:     { title: 'GOLDRAUSCH', sub: 'Beute liegt überall und zählt dreifach', dur: 10, color: '#f9c80e', district: 'basar' },
+    express:  { title: 'EXPRESS-TAKT', sub: 'Magnetbahnen im Dauertakt: jedes Gleis +5', dur: 10, color: '#c86bff', district: 'kuppel' },
+    konvoi:   { title: 'SCHWERLAST-KONVOI', sub: 'Verkehr bremst ab, Near-Miss zählt dreifach', dur: 10, color: '#3dff88', district: 'untergrund' }
   };
+  const SIGNATURE_CHANCE = .45;   // so oft kommt das Bezirks-Event statt eines allgemeinen
   const EVENT_WARN = 1.6;
-  let ev = null, evNext = 0, evLast = '', blackoutK = 0;
+  let ev = null, evNext = 0, evLast = '', blackoutK = 0, fogK = 0;
   let runs = 0, dataHintShown = false, hintLeft = 0;
 
   // ---------- Missionen ----------
@@ -701,7 +730,7 @@
   const outfitUnlocked = id => outfitFor(id).stars <= ms.stars;
   let selectedOutfit = 'courier', previewOutfit = 'courier';
   try {
-    const savedOutfit = localStorage.getItem('nh-outfit');
+    const savedOutfit = ({ kurier: 'courier', geist: 'specter' })[localStorage.getItem('nh-outfit')] || localStorage.getItem('nh-outfit');
     if (savedOutfit && outfitFor(savedOutfit).id === savedOutfit) selectedOutfit = savedOutfit;
   } catch (e) {}
   if (!outfitUnlocked(selectedOutfit)) selectedOutfit = 'courier';
@@ -780,11 +809,17 @@
     run.maxMult = Math.max(run.maxMult, mult); run.maxHeat = Math.max(run.maxHeat, Math.floor(heat));
     for (const a of ms.active) {
       if (a.done || missionValue(a) < a.target) continue;
-      const before = rankIdx();
+      const before = rankIdx(), starsBefore = ms.stars;
       a.done = true; ms.stars++; saveMissions();
       popup(player.col + .5, player.row + 1.8, '★ MISSION ERFÜLLT', P.cyan);
       Sound.sting('win');
-      if (rankIdx() > before) popup(player.col + .5, player.row + 2.6, 'NEUER RANG: ' + RANKS[rankIdx()].toUpperCase(), P.gold);
+      if (rankIdx() > before) {
+        popup(player.col + .5, player.row + 2.6, 'NEUER RANG: ' + RANKS[rankIdx()].toUpperCase(), P.gold);
+        const nd = DISTRICTS.find(d => d.rank === rankIdx());
+        if (nd) popup(player.col + .5, player.row + 3.4, 'BEZIRK FREI: ' + nd.name.toUpperCase(), P.cyan);
+      }
+      const no = OUTFITS.find(o => o.stars > starsBefore && o.stars <= ms.stars);
+      if (no) popup(player.col + .5, player.row + 4.2, 'OUTFIT FREI: ' + no.name.toUpperCase(), P.magenta);
     }
   }
   function rankText() {
@@ -802,7 +837,7 @@
     fillMissions();
     document.getElementById('rankStart').textContent = rankText();
     document.getElementById('startTag').textContent = 'Syndikat-Kurier · ' + districtFor(selectedDistrict).name;
-    document.getElementById('dailyInfo').textContent = `Daily Run ${dayKey}: dieselbe Stadt für alle, heute. Dein Bestwert: ${dailyBest}`;
+    document.getElementById('dailyInfo').textContent = `Daily Run ${dayKey}: dieselbe Stadt für alle, immer in Sektor 7. Dein Bestwert: ${dailyBest}`;
     renderMissions(document.getElementById('missionsStart'), 'Missionen');
     document.getElementById('over').hidden = true;
     document.getElementById('leaderboard').hidden = true;
@@ -817,7 +852,7 @@
   const cleanLeaderboard = (entries, expectedMode) => Array.isArray(entries)
     ? entries.filter(entry => entry && Number.isFinite(entry.score) && entry.score >= 0 && entry.mode === expectedMode &&
         typeof entry.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(entry.date))
-      .map(entry => ({ score: Math.floor(entry.score), mode: expectedMode, date: entry.date }))
+      .map(entry => ({ score: Math.floor(entry.score), mode: expectedMode, date: entry.date, district: typeof entry.district === 'string' ? entry.district : '' }))
       .sort((a, b) => b.score - a.score || b.date.localeCompare(a.date))
       .slice(0, 10)
     : [];
@@ -831,7 +866,7 @@
   } catch (e) {}
   function saveLeaderboardRun() {
     const runMode = mode === 'daily' ? 'daily' : 'normal';
-    leaderboard[runMode] = [...leaderboard[runMode], { score: Math.max(0, Math.floor(score)), mode: runMode, date: runDate || localDateKey() }]
+    leaderboard[runMode] = [...leaderboard[runMode], { score: Math.max(0, Math.floor(score)), mode: runMode, date: runDate || localDateKey(), district: district.name }]
       .sort((a, b) => b.score - a.score || b.date.localeCompare(a.date))
       .slice(0, 10);
     try { localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(leaderboard)); } catch (e) {}
@@ -861,7 +896,7 @@
       result.textContent = `${entry.score} Punkte`;
       const date = document.createElement('span');
       const [year, month, day] = entry.date.split('-');
-      date.textContent = `${entry.mode === 'daily' ? 'Daily Run' : 'Standard'} · ${day}.${month}.${year}`;
+      date.textContent = `${entry.mode === 'daily' ? 'Daily Run' : 'Standard'} · ${entry.district ? entry.district + ' · ' : ''}${day}.${month}.${year}`;
       details.append(result, date);
       row.append(rank, details);
       container.append(row);
@@ -999,7 +1034,7 @@
   };
   const POWER_CHANCE = .06;
   // Laser-Takt in Sekunden: aus → laden (Flackern als Warnung) → an
-  const LASER = { off: 1.6, charge: .45, on: 1.0, get cycle() { return this.off + this.charge + this.on; } };
+  const LASER = { off: 1.6, charge: .7, on: 1.0, get cycle() { return this.off + this.charge + this.on; } };
   function laserState(l) {
     const t = ((l.t % LASER.cycle) + LASER.cycle) % LASER.cycle;
     return t < LASER.off ? 'off' : t < LASER.off + LASER.charge ? 'charge' : 'on';
@@ -1063,7 +1098,7 @@
     const r = getRow(row), cx = x + .5;
     for (const p of r.plats) for (const off of [0, -r.span, r.span]) {
       const a = p.x - 4 + off;
-      if (cx > a + .08 && cx < a + p.w - .08) return true;
+      if (cx > a - PAD_GRACE && cx < a + p.w + PAD_GRACE) return true;
     }
     return false;
   }
@@ -1084,7 +1119,7 @@
          (prev.type !== 'data' && rnd() < mix.data))) {
       return makeData(i, prev);
     }
-    const roadChance = prev && prev.type === 'safe' ? Math.min(.95, mix.road + .18) : mix.road;
+    const roadChance = (prev && prev.type === 'safe' ? Math.min(.95, mix.road + .18) : mix.road) * TRAFFIC_DENSITY;
     // Magnetbahn: ab Reihe 10, nie zwei Gleise direkt hintereinander
     if (i >= 10 && prev && prev.type !== 'rail' && rnd() < mix.rail) {
       return { type: 'rail', dir: rnd() < .5 ? 1 : -1, len: 10, speed: 15, phase: 'idle', wait: rand(1, 4), warnT: 0, tx: 0, decor: [] };
@@ -1098,9 +1133,9 @@
       }
       return r;
     }
-    const level = Math.min(i / 220, 1);           // wird mit der Zeit schneller (langsamer Anstieg)
+    const level = Math.min(i / 260, 1);           // wird mit der Zeit schneller (langsamer Anstieg)
     const dir = rnd() < 0.5 ? -1 : 1;
-    let speed = rand(1.0, 1.9) + level * 1.7;      // Zellen pro Sekunde
+    let speed = (rand(1.0, 1.9) + level * 1.5) * TRAFFIC_SPEED;   // Zellen pro Sekunde
     // Laster: selten, nie zwei Laster-Spuren direkt hintereinander, und langsamer als Autos
     const isTruck = i > 10 && !(prev && prev.truck) && rnd() < mix.truck;
     if (isTruck) speed *= .75;
@@ -1110,8 +1145,8 @@
     let x = rand(0, 3);
     while (x < span - 2) {
       const w = isTruck ? pick([1.6, 1.9]) : pick([1.1, 1.3]);
-      cars.push({ x, w });
-      x += w + rand(isTruck ? 4 : 3, isTruck ? 6.5 : 6);   // großzügige Lücken → immer ein Durchkommen
+      cars.push({ x, w, style: rnd() < .5 ? 'modern' : 'classic' });
+      x += w + rand(isTruck ? 4.5 : 3.5, isTruck ? 7 : 6.6);   // großzügige Lücken → immer ein Durchkommen
     }
     return { type: 'road', dir, speed, cars, span, truck: isTruck, color };
   }
@@ -1132,7 +1167,7 @@
     score = 0; particles = []; shake = 0; glitch = 0;
     heat = 0; loot = 0; drones = []; droneTimer = 3; heatShown = -1;
     endEvent(true); evNext = rand(14, 22);
-    dataHintShown = runs >= 3; hintLeft = 0; evLast = ''; blackoutK = 0;
+    dataHintShown = runs >= 3; hintLeft = 0; evLast = ''; blackoutK = 0; fogK = 0;
     points = 0; combo = 0; comboTimer = 0; mult = 1; hopId = 0; nmHop = -1; slow = 0; popups = [];
     pw = {}; invuln = 0; powersKey = ''; renderPowers();
     updateCombo();
@@ -1160,6 +1195,7 @@
     player.col = nc; player.row = nr; player.hopT = 0; hopId++;
     if (nr > player.maxRow) {
       if (getRow(nr).type === 'data') run.data++;
+      if (getRow(nr).type === 'rail' && evActive('express')) { points += 5 * mult; popup(nc + .5, nr + 1.6, 'GLEIS +' + 5 * mult, '#c86bff'); }
       player.maxRow = nr;
       combo++; comboTimer = COMBO_WINDOW;
       const m = Math.min(5, 1 + Math.floor(combo / 6));
@@ -1247,9 +1283,10 @@
         if (gap < 0 || gap > .35) continue;
         if (away && (right ? r.dir < 0 : r.dir > 0)) continue;
         nmHop = hopId; run.near++;
-        points += 2 * mult; score = points; updateHud();
+        const nmBonus = 2 * mult * (evActive('konvoi') ? 3 : 1);
+        points += nmBonus; score = points; updateHud();
         comboTimer = COMBO_WINDOW; updateCombo();
-        popup(px + .5, row + 1, 'KNAPP! +' + 2 * mult, P.magenta);
+        popup(px + .5, row + 1, 'KNAPP! +' + nmBonus, P.magenta);
         burst(px + .5, row + .5, 12, [P.magenta, '#ffffff'], 2, .4);
         Sound.near();
         if (!reduceMotion) slow = .14;
@@ -1272,8 +1309,9 @@
 
   const bannerEl = document.getElementById('banner'), chipEl = document.getElementById('eventChip');
   function startEvent() {
-    const types = Object.keys(EVENTS).filter(k => k !== evLast);
-    const type = pick(types);
+    const general = Object.keys(EVENTS).filter(k => !EVENTS[k].district && k !== evLast);
+    const sig = Object.keys(EVENTS).find(k => EVENTS[k].district === district.id);
+    const type = sig && sig !== evLast && Math.random() < SIGNATURE_CHANCE ? sig : pick(general);
     ev = { type, warn: EVENT_WARN, left: EVENTS[type].dur };
     evLast = type;
     const E = EVENTS[type];
@@ -1289,11 +1327,17 @@
       heat = Math.min(5, heat + 2);
       for (let k = 0; k < 3; k++) {               // Staffel: drei Drohnen kurz nacheinander
         const dir = k % 2 ? 1 : -1, row = player.row + 1 + k;
-        if (!getRow(row).safehouse) drones.push({ row, dir, x: dir > 0 ? -2 - k * 1.5 : COLS + 1 + k * 1.5, warn: .9 + k * .35, speed: 7 });
+        if (getRow(row).type !== 'safe') drones.push({ row, dir, x: dir > 0 ? -2 - k * 1.5 : COLS + 1 + k * 1.5, warn: DRONE_WARN + k * .35, speed: 7 });
       }
       Sound.warn();
     }
-    if (ev.type === 'blackout') Sound.muffle(true);
+    if (ev.type === 'blackout' || ev.type === 'nebel') Sound.muffle(true);
+    if (ev.type === 'gold') {                         // Goldrausch: Beute auf die nächsten Reihen streuen
+      for (let i = player.row + 1; i <= player.row + 14; i++) {
+        const r = getRow(i);
+        if ((r.type === 'road' || (r.type === 'safe' && !r.safehouse)) && r.loot < 0 && Math.random() < .6) r.loot = Math.floor(Math.random() * COLS);
+      }
+    }
   }
   function endEvent(silent) {
     if (!ev) return;
@@ -1332,7 +1376,7 @@
 
   function grabLoot(c, r) {
     loot++;
-    const lootVal = 3 * mult * (evActive('rush') ? 2 : 1);
+    const lootVal = 3 * mult * (evActive('rush') ? 2 : 1) * (evActive('gold') ? 3 : 1);
     points += lootVal;
     Sound.loot();
     popup(c + .5, r + 1, '+' + lootVal, P.gold);
@@ -1379,6 +1423,7 @@
     if (cause === 'laser') Sound.zap();
     Sound.death(); Sound.duck(true);
     endEvent(true);
+    hintLeft = 0; bannerEl.hidden = true;         // Hinweis-Banner nicht über dem Game-Over stehen lassen
     combo = 0; comboEl.hidden = true;
     const t = ease(player.hopT);
     burst(player.fromCol + (player.col - player.fromCol) * t + .5, player.row + .5, 40, [P.magenta, P.violet, P.cyan, P.blue, '#ffffff'], 4, .9);
@@ -1399,7 +1444,7 @@
       document.getElementById('overScore').textContent = score;
       const rec = score > prevBest && score > 0;
       document.getElementById('overBest').textContent = `◆ ${loot} Beute · Reihe ${player.maxRow} · ` + (rec ? 'Neuer Rekord' : 'Rekord: ' + Math.max(prevBest, score));
-      document.getElementById('overMode').textContent = mode === 'daily' ? `Daily Run ${dayKey}` : '';
+      document.getElementById('overMode').textContent = (mode === 'daily' ? `Daily Run ${dayKey} · ` : '') + district.name;
       document.getElementById('rankOver').textContent = rankText();
       renderMissions(document.getElementById('missionsOver'), 'Missionen');
       const box = document.getElementById('shareBox');
@@ -1422,7 +1467,7 @@
   function update(dt) {
     const level = Math.floor(heat);
     const slowF = pw.slow > 0 ? .4 : 1;              // Zeitlupe-Hack bremst alles außer dich
-    const speedMult = (1 + level * .08) * (evActive('rush') ? 1.3 : 1) * slowF;
+    const speedMult = (1 + level * .06) * (evActive('rush') ? 1.3 : 1) * (evActive('ampel') ? .3 : 1) * (evActive('konvoi') ? .7 : 1) * slowF;
     const lo = Math.floor(camRow) - 2, hi = lo + Math.ceil(H / cell) + 4;
     for (let i = lo; i <= hi; i++) {
       const r = getRow(i);
@@ -1438,6 +1483,7 @@
         const near = state === 'play' && Math.abs(i - player.row) <= 4;
         if (r.phase === 'idle') {
           r.wait -= dt * slowF;
+          if (evActive('express')) r.wait = Math.min(r.wait, .5);   // Express-Takt: kaum Pause zwischen Zügen
           if (r.wait <= 0) { r.phase = 'warn'; r.warnT = 1.2; if (near) Sound.bell(); }
         } else if (r.phase === 'warn') {
           r.warnT -= dt * slowF;
@@ -1484,9 +1530,10 @@
         }
       }
       blackoutK += ((evActive('blackout') ? 1 : 0) - blackoutK) * Math.min(1, dt * 3);   // weiches Ein-/Ausblenden
+      fogK += ((evActive('nebel') ? 1 : 0) - fogK) * Math.min(1, dt * 2);
 
       let cool = getRow(player.row).safehouse ? .18 : .05;   // im Safehouse ~3,5x schneller
-      if (evActive('blackout')) cool *= 2;
+      if (evActive('blackout') || evActive('nebel')) cool *= 2;
       if (!(pw.ghost > 0)) heat = Math.max(0, heat - dt * cool);
       const razzia = evActive('razzia');
       // Power-up-Timer
@@ -1501,14 +1548,14 @@
           if (r.loot >= 0 && Math.abs(r.loot - pc) <= 1) { const c = r.loot; r.loot = -1; grabLoot(c, rr2); score = points; updateHud(); }
         }
       }
-      if ((level >= 1 || razzia) && !evActive('blackout') && !(pw.ghost > 0)) {
+      if ((level >= 1 || razzia) && !evActive('blackout') && !evActive('nebel') && !(pw.ghost > 0)) {
         droneTimer -= dt;
         if (droneTimer <= 0) {
           droneTimer = razzia ? rand(.7, 1.1) : Math.max(1.1, 4.5 - level * .7) * rand(.8, 1.2);
           const dir = Math.random() < .5 ? 1 : -1;
-          const row = player.row + pick([0, 1, 1, 2, 2, 3]);
-          if (!getRow(row).safehouse) {                 // ins Safehouse fliegen Drohnen nicht
-            drones.push({ row, dir, x: dir > 0 ? -2 : COLS + 1, warn: .9, speed: 6 + level * .8 });
+          const row = player.row + pick([1, 1, 2, 2, 3]);
+          if (getRow(row).type !== 'safe') {            // Drohnen fliegen nur über Straßen, Kanäle und Gleise – Gassen bleiben sicher
+            drones.push({ row, dir, x: dir > 0 ? -2 : COLS + 1, warn: DRONE_WARN, speed: 6 + level * .8 });
             Sound.warn();
           }
         }
@@ -1542,41 +1589,42 @@
     }
     // Magnetbahn und Laser-Gitter
     {
-      const e3 = ease(player.hopT);
-      const px = player.fromCol + (player.col - player.fromCol) * e3;
-      const cr = getRow(player.row);
-      if (cr.type === 'rail' && cr.phase === 'pass' && cr.tx < px + .85 && cr.tx + cr.len > px + .15) return die('rail');
+      const hit = hitPos(), cr = getRow(hit.row);
+      if (cr.type === 'rail' && cr.phase === 'pass' && cr.tx < hit.px + 1 - HIT_PAD && cr.tx + cr.len > hit.px + HIT_PAD) return die('rail');
       if (cr.laser && player.hopT >= .5 && laserState(cr.laser) === 'on' && !cr.laser.gaps.includes(Math.round(player.col))) return die('laser');
     }
     // Im Safehouse steigen kühle Funken auf, solange Heat abkühlt
     if (dr.safehouse && heat > 0 && Math.random() < dt * 14)
       particles.push({ x: player.col + rand(.1, .9), y: player.row + .1, vx: 0, vy: rand(.8, 1.6), life: .7, max: .7, color: P.cyan, size: .05 });
 
-    const r = getRow(player.row);
+    const hit = hitPos(), r = getRow(hit.row);
     if (r.type === 'road') {
-      const t = ease(player.hopT);
-      const px = player.fromCol + (player.col - player.fromCol) * t;
-      const a = px + 0.18, b = px + 0.82;
+      const a = hit.px + HIT_PAD, b = hit.px + 1 - HIT_PAD;
       for (const c of r.cars) {
         for (const off of [0, -r.span, r.span]) {
           const cx = c.x - 4 + off;                 // Spur beginnt 4 Zellen links vom Bild
-          if (cx < b && cx + c.w > a) return die('car');
+          if (cx + CAR_SHRINK < b && cx + c.w - CAR_SHRINK > a) return die('car');
         }
       }
     }
 
     if (player.hopT >= 1) nearMiss(player.row, player.col, true);   // knapp hinter einem Auto gelandet
     {
-      const t = ease(player.hopT);
-      const px = player.fromCol + (player.col - player.fromCol) * t;
+      const h2 = hitPos();
       for (const d of drones) {
-        if (!(pw.ghost > 0) && d.warn <= 0 && d.row === player.row && d.x < px + .82 && d.x + .8 > px + .18) return die('drone');
+        if (!(pw.ghost > 0) && d.warn <= 0 && d.row === h2.row && d.x + .1 < h2.px + 1 - HIT_PAD && d.x + .7 > h2.px + HIT_PAD) return die('drone');
       }
     }
     const target = player.row - Math.floor(H / cell) * 0.32;
     if (target > camRow) camRow += (target - camRow) * Math.min(1, dt * 6);
   }
   const ease = t => 1 - (1 - t) * (1 - t);
+  // Wo du für Treffer gerade bist: bis zur Hälfte eines Sprungs zählt noch das alte Feld –
+  // so erwischt dich kein Auto in der Zielreihe, bevor du dort optisch angekommen bist.
+  function hitPos() {
+    const t = ease(player.hopT);
+    return { row: player.hopT < .5 ? player.fromRow : player.row, px: player.fromCol + (player.col - player.fromCol) * t };
+  }
 
   // ---------- Zeichnen ----------
   function rowY(i) { return H - (i - camRow + 1) * cell; }
@@ -1697,7 +1745,7 @@
       if (r.type !== 'road') continue;
       const y = rowY(i), bob = Math.sin(t * 6 + i) * cell * .02;
       for (const c of r.cars) {
-        const s = carSprite(c.w, r.color, r.dir, r.truck);
+        const s = carSprite(c.w, r.color, r.dir, r.truck, c.style || 'modern');
         for (const off of [0, -r.span]) {
           const x = (c.x - 4 + off) * cell;
           if (x > W + cell || x + c.w * cell < -cell) continue;
@@ -1799,7 +1847,7 @@
             ctx.fillRect(x0 + 3, yc - cell * .3, 2, cell * .6); ctx.fillRect(x0 + cell - 5, yc - cell * .3, 2, cell * .6);
             continue;
           }
-          if (st === 'off') { ctx.fillStyle = 'rgba(255, 42, 109, .14)'; ctx.fillRect(x0, yc - 1, cell, 2); }
+          if (st === 'off') { ctx.fillStyle = 'rgba(255, 42, 109, .32)'; for (let k = 0; k < 4; k++) ctx.fillRect(x0 + k * cell / 4 + 2, yc - 1, cell / 8, 2); }
           else if (st === 'charge') { ctx.fillStyle = `rgba(255, 42, 109, ${.25 + Math.random() * .45})`; ctx.fillRect(x0, yc - 1.5, cell, 3); }
           else {
             ctx.fillStyle = 'rgba(255, 42, 109, .28)'; ctx.fillRect(x0, yc - cell * .2, cell, cell * .4);
@@ -1825,6 +1873,19 @@
         }
       }
     }
+    // Hafennebel: alles ab gut zwei Reihen vor dir verschwindet im Dunst
+    if (fogK > .01) {
+      ctx.globalCompositeOperation = 'source-over';
+      const clear = rowY(player.row + 2), thick = rowY(player.row + 4);
+      const fg = ctx.createLinearGradient(0, clear, 0, thick);
+      fg.addColorStop(0, 'rgba(120, 170, 190, 0)'); fg.addColorStop(1, `rgba(120, 170, 190, ${.93 * fogK})`);
+      ctx.fillStyle = fg; ctx.fillRect(-20, thick, W + 40, clear - thick);
+      ctx.fillStyle = `rgba(120, 170, 190, ${.93 * fogK})`; ctx.fillRect(-20, -20, W + 40, thick + 20);
+      ctx.fillStyle = `rgba(120, 170, 190, ${.12 * fogK})`; ctx.fillRect(-20, -20, W + 40, H + 40);
+      ctx.globalCompositeOperation = 'lighter';
+    }
+    // Goldrausch: leichter Goldschimmer
+    if (evActive('gold')) { ctx.fillStyle = 'rgba(249, 200, 14, .05)'; ctx.fillRect(0, 0, W, H); }
     // Sirenen-Licht ab Heat 2 (bei Razzia immer)
     const lvl = Math.floor(heat);
     if ((lvl >= 2 || evActive('razzia')) && state === 'play') {

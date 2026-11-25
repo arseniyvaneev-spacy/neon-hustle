@@ -34,6 +34,8 @@
 - Power-ups (ab Reihe 8, auf ca. 6 % der Reihen): EMP-Schild, Zeitlupe, Tarnmodus, Magnet
 - Daily Run (feste Stadt pro Tag per Seed) mit teilbarem Ergebnis
 - Missionen mit Sternen und 6 Rängen
+- Signature-Events pro Bezirk (Chance 45 % statt eines allgemeinen Events): Ampel-Hack (Verkehr kriecht), Hafennebel (Sicht nur ~2 Reihen, keine Drohnen), Goldrausch (Beute überall, ×3), Express-Takt (Züge im Dauertakt, Gleis +5), Schwerlast-Konvoi (Verkehr langsamer, Near-Miss ×3)
+- Faire Treffer: bis zur Hälfte eines Sprungs zählt das alte Feld; kleinere Trefferzonen (`HIT_PAD`, `CAR_SHRINK`); Drohnen nie über Gassen
 - Bestenliste (lokal): Top 10 für Standard und Daily getrennt, mit Datum und Bezirk
 - Garderobe: vier Outfits (Syndikat-Kurier, Neonläufer, Nachtgeist, Pulse-Rider), freigeschaltet bei 0/4/8/12 Sternen; ändern nur die Farben
 - Bezirke: Sektor 7, Hafen 9, Neon-Basar, Kuppelstadt, Untergrund, freigeschaltet über den Rang (0–4); eigene Palette und Reihen-Mischung (`DISTRICTS`), Steuerung und Punkte gleich. Der Daily Run spielt immer in Sektor 7.
@@ -41,9 +43,8 @@
 ## Roadmap
 
 1. **Zwei Bezirke über dem höchsten Rang:** Skydeck (schnelle Magnetbahnen, lange Datenkanal-Blöcke) und Spiegelbezirk (gleichmäßiger, sehr dichter Verkehr), je mit eigener Palette, Mischung und Freischaltung.
-2. **Signature-Events pro Bezirk:** z. B. Nebel im Hafen (eingeschränkte Sicht), Goldrausch im Basar (Beute dreifach), eingebaut in den Event-Ablauf mit Banner und Countdown.
-3. **Abzeichen-Schrank:** eigener Screen mit Kacheln je Bezirk und den erreichten Rängen; gesperrte Kacheln abgedunkelt mit Rang-Anforderung.
-4. **Später / nur wenn Zeit:** Outfits mit Beute kaufen, Boss (Polizei-Mech).
-5. **Veröffentlichung:** GitHub Pages einschalten (siehe README); App Store nur mit Mac und Developer-Account.
+2. **Abzeichen-Schrank:** eigener Screen mit Kacheln je Bezirk und den erreichten Rängen; gesperrte Kacheln abgedunkelt mit Rang-Anforderung.
+3. **Später / nur wenn Zeit:** Outfits mit Beute kaufen, Boss (Polizei-Mech).
+4. **Veröffentlichung:** GitHub Pages einschalten (siehe README); App Store nur mit Mac und Developer-Account.
 
 **Nicht vor Version 1:** Shop, Skins, mehrere Charaktere.
