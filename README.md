@@ -17,9 +17,22 @@ Ein Endless-Hopper im Neon-Cyberpunk-Look fürs iPhone. Du bist Kurier eines Syn
 | Near-Miss | knapp an einem Auto vorbei → Bonus und kurze Zeitlupe |
 | Datenkanal | nur auf Server-Plattformen landen, sie tragen dich mit |
 | Safehouse | Heat kühlt schnell ab, keine Drohnen – kostet aber die Combo |
+| Magnetbahn | Gleis blinkt rot und läutet, dann rast ein langer Zug durch |
+| Laser-Gitter | Gassen mit Laser im Takt (flackert vor dem Einschalten); cyan markierte Spalten sind immer frei |
 | Blackout | Stadt dunkel, nur Lichtkreis und Scheinwerfer; keine Drohnen, Heat kühlt doppelt |
 | Rush Hour | Verkehr 45 % schneller, Beute zählt doppelt |
 | Razzia | Heat +2 und Drohnenstaffel; wer überlebt, bekommt Bonus |
+| ⬡ EMP-Schild | fängt einen Treffer ab, holt Drohnen in der Nähe runter |
+| ⬡ Zeitlupe | 4 s lang läuft alles außer dir in 40 % Tempo |
+| ⬡ Tarnmodus | 6 s unsichtbar für Drohnen, Heat eingefroren |
+| ⬡ Magnet | 8 s lang wird Beute von den Nachbarfeldern angezogen |
+
+## Daily Run und Missionen
+
+- **Daily Run:** Jeden Tag eine feste Stadt, für alle gleich (nach lokalem Datum). Eigener Tagesbestwert und ein Ergebnis zum Kopieren und Teilen.
+- **Missionen:** Immer drei aktiv, z. B. „Sammle 10 Beute in einem Run“ oder „Überlebe eine Razzia“. Jede erfüllte Mission bringt einen Stern; alle 4 Sterne steigt dein Rang (Laufbursche → Kurier → Runner → Fixer → Schatten → Syndikats-Boss) und die Ziele werden härter.
+
+Fortschritt, Rekorde und Missionen werden nur im Browser auf deinem Gerät gespeichert.
 
 ## Aufbau
 
