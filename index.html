@@ -91,6 +91,17 @@
   .btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
   .btn:active { transform: scale(.97); }
   .note { color: var(--dim); font-size: 14px; }
+  .btn.trip {
+    min-width: 240px; border-color: transparent; color: #fff;
+    background: linear-gradient(rgb(13 2 33 / .85), rgb(13 2 33 / .85)) padding-box,
+                linear-gradient(90deg, var(--magenta), var(--violet), var(--cyan), #3dff88, var(--magenta)) border-box;
+    background-size: 100% 100%, 300% 100%; animation: tripBorder 4s linear infinite;
+    box-shadow: 0 0 18px rgb(166 77 255 / .6);
+  }
+  .btn.trip:disabled { animation: none; opacity: .5; cursor: default; }
+  @keyframes tripBorder { to { background-position: 0 0, 300% 0; } }
+  @media (prefers-reduced-motion: reduce) { .btn.trip { animation: none; } }
+  .btn.small { font-size: 11px; min-height: 40px; padding: 8px 14px; box-shadow: none; border-color: rgb(166 77 255 / .45); }
   .install { font-size: 14px; color: var(--ink); padding: 8px 12px; border-radius: 10px; border: 1px dashed var(--cyan); background: rgb(5 217 232 / .08); }
   .install b { color: var(--cyan); }
   .rank { font: 600 12px var(--display); letter-spacing: .2em; text-transform: uppercase; color: var(--cyan); text-shadow: 0 0 8px rgb(5 217 232 / .6); }
@@ -250,6 +261,8 @@
       <button id="playBtn" class="btn primary" type="button">Spielen</button>
       <button id="dailyBtn" class="btn" type="button">Daily Run</button>
     </div>
+    <button id="tripBtn" class="btn trip" type="button">Cosmic Neon-Trip</button>
+    <button id="fxBtn" class="btn small" type="button">Trip-Effekte: voll</button>
     <div class="note" id="dailyInfo"></div>
     <button id="leaderboardBtn" class="btn leaderboard-open" type="button">Bestenliste</button>
     <button id="wardrobeBtn" class="btn" type="button">Garderobe</button>
@@ -260,6 +273,7 @@
       <summary>Wie spielt man?</summary>
       <p><b>Tippen</b> = vorwärts · <b>Wischen</b> = links, rechts, zurück</p>
       <p>Am Rechner: Pfeiltasten · M = Ton</p>
+      <p><b>Cosmic Neon-Trip</b> (ab Rang Runner): alles schneller, Punkte doppelt. Springst du genau auf den Bass, gibt es <b>Beat-Bonus</b> – der schrumpfende Ring um dich zeigt den Takt.</p>
       <p><b>Magnetbahn</b>: blinkt das Gleis rot, kommt gleich ein Zug. <b>Laser</b>: flackert er, schaltet er gleich ein; freie Spalten sind cyan markiert.</p>
       <p><b>⬡ Power-ups</b>: Schild, Zeitlupe, Tarnmodus, Magnet.</p>
       <p><b>Datenkanal</b>: auf die leuchtenden Pads springen, nicht in den Strom. <b>Safehouse</b>: hier kühlt Heat schnell ab, Drohnen kommen nicht rein.</p>
@@ -274,6 +288,7 @@
     <h1>BESTENLISTE</h1>
     <div class="leaderboard-list" id="normalLeaderboard"></div>
     <div class="leaderboard-list" id="dailyLeaderboard"></div>
+    <div class="leaderboard-list" id="tripLeaderboard"></div>
     <button id="leaderboardBackBtn" class="btn" type="button">Zurück</button>
   </div>
 </div>
@@ -332,7 +347,9 @@
     let ac = null, master, sfx, music, musicLP, bassFilter, noiseBuf, timer = null;
     let step = 0, nextT = 0, intensity = 0, muted = false;
     try { muted = localStorage.getItem('nh-mute') === '1'; } catch (e) {}
-    const BPM = 112, STEP = 60 / BPM / 4;                    // Sechzehntel
+    let BPM = 112, STEP = 60 / BPM / 4, transpose = 0;       // Sechzehntel; im Trip schneller und höher
+    const kicks = [];                                         // Zeitpunkte der letzten/nächsten Bass-Schläge
+    const clockSeen = { ac: -1, perf: 0 };
     const ROOTS = [33, 29, 36, 31];                          // A, F, C, G (MIDI)
     const CHORDS = [[0, 3, 7], [0, 4, 7], [0, 4, 7], [0, 4, 7]];
     const BASS = [0, 0, 12, 0, 0, 12, 0, 12, 0, 0, 12, 0, 0, 12, 7, 12];
@@ -377,8 +394,8 @@
     function schedule() {
       if (ac.state !== 'running') return;
       while (nextT < ac.currentTime + .12) {
-        const s16 = step % 16, bar = Math.floor(step / 16) % 4, root = ROOTS[bar];
-        if (s16 % 4 === 0) tone('sine', 150, 42, .22, .9, nextT, music);
+        const s16 = step % 16, bar = Math.floor(step / 16) % 4, root = ROOTS[bar] + transpose;
+        if (s16 % 4 === 0) { tone('sine', 150, 42, .22, .9, nextT, music); kicks.push(nextT); if (kicks.length > 8) kicks.shift(); }
         if (s16 === 4 || s16 === 12) noise(.14, .5, 1800, 900, nextT, music);
         if (intensity >= 1 && s16 % 2 === 1) noise(.035, .25, 9000, 0, nextT, music, 'highpass');
         bassFilter.frequency.setTargetAtTime(450 + intensity * 260, nextT, .3);
@@ -393,6 +410,21 @@
     return {
       init,
       setIntensity(l) { intensity = l; },
+      setTempo(bpm, tr) { BPM = bpm; STEP = 60 / BPM / 4; transpose = tr || 0; },
+      // Abstand zum letzten und zum nächsten Bass-Schlag in Sekunden (ohne Ton: eigene Uhr im selben Takt)
+      beat() {
+        const period = 60 / BPM;
+        // Steht die Audio-Uhr still (kein Ton möglich, Gerät pausiert), läuft der Takt über die normale Uhr weiter
+        const perf = performance.now() / 1000;
+        if (ac && ac.currentTime !== clockSeen.ac) { clockSeen.ac = ac.currentTime; clockSeen.perf = perf; }
+        const stalled = !ac || ac.state !== 'running' || perf - clockSeen.perf > .25;
+        if (stalled) { const t = perf % period; return { since: t, to: period - t, period }; }
+        const now = ac.currentTime; let last = -Infinity, next = Infinity;
+        for (const k of kicks) { if (k <= now && k > last) last = k; if (k > now && k < next) next = k; }
+        if (last === -Infinity) last = next - period;
+        if (next === Infinity) next = last + period;
+        return { since: now - last, to: next - now, period };
+      },
       pause(on) { if (ac) on ? ac.suspend() : ac.resume(); },
       muffle(on) { if (ac) musicLP.frequency.setTargetAtTime(on ? 420 : 18000, ac.currentTime, .25); },
       sting(type) {
@@ -435,6 +467,21 @@
   const COLS = 9;
   const COMBO_WINDOW = 1.1;   // Sekunden bis die Combo verfällt
   const HOP_MS = 75;          // Dauer eines Hüpfers in ms (kleiner = flinker)
+  // ---------- Cosmic Neon-Trip ----------
+  // Eigener Modus: schneller, Punkte doppelt, Beat-Sprung-Bonus, alle TRIP.stageRows Reihen eine Stufe intensiver.
+  const TRIP = {
+    rank: 2,              // freigeschaltet ab Rang „Runner“ (Index in RANKS)
+    speed: 1.6,           // Verkehrstempo am Anfang
+    speedPerStage: .08,   // plus pro Stufe
+    points: 2,            // Punkte-Faktor
+    bpm: 140,             // Musik-Tempo (normal 112)
+    beatWindow: .12,      // so viele Sekunden vor/nach dem Bass zählt ein Sprung als „auf den Beat“
+    beatBonus: 2,         // Bonuspunkte pro Beat-Sprung (× Multiplikator × Punkte-Faktor)
+    beatCombo: .4,        // so viel länger hält die Combo nach einem Beat-Sprung
+    stageRows: 25,        // alle so viele Reihen: nächste Stufe
+    maxStage: 6
+  };
+  const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI'];
   // Faire Treffer: nur die Mitte deines Feldes zählt, Fahrzeuge sind an den Enden etwas „weicher“
   const HIT_PAD = .26;        // so viel vom Feldrand links/rechts zählt NICHT als Treffer (0–0,5)
   const CAR_SHRINK = .1;      // Fahrzeuge zählen an jedem Ende so viel kürzer, als sie aussehen
@@ -453,11 +500,19 @@
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   let W, H, cell, dpr;
+  // Zweite, unsichtbare Leinwand für die Lichtschweife im Trip (nur Fahrzeuge und Figur)
+  const trail = document.createElement('canvas'), tctx = trail.getContext('2d');
+  let tripStage = 1, hue = 0, beatPulse = 0, warp = [];
+  let fxLow = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  try { const v = localStorage.getItem('nh-fx-low'); if (v !== null) fxLow = v === '1'; } catch (e) {}
+  const tripFx = () => mode === 'trip' && !fxLow && state !== 'menu';
+  const scoreMul = () => mode === 'trip' ? TRIP.points : 1;
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2); // 2x reicht, spart viel Rechenzeit
     W = canvas.clientWidth; H = canvas.clientHeight;
     canvas.width = W * dpr; canvas.height = H * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    trail.width = canvas.width; trail.height = canvas.height; tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     cell = W / COLS;
     sprites.clear();
   }
@@ -833,8 +888,16 @@
       return `<div class="m${a.done ? ' done' : ''}"><span>${a.done ? '✔ ' : ''}${M.text(a.target)}</span><b>${v}/${a.target}</b><i><u style="width:${100 * v / a.target}%"></u></i></div>`;
     }).join('');
   }
+  function syncTripButtons() {
+    const tb = document.getElementById('tripBtn'), open = rankIdx() >= TRIP.rank;
+    tb.disabled = !open;
+    tb.textContent = open ? 'Cosmic Neon-Trip' : `Cosmic Neon-Trip · ab Rang ${RANKS[TRIP.rank]}`;
+    document.getElementById('fxBtn').textContent = 'Trip-Effekte: ' + (fxLow ? 'reduziert' : 'voll');
+  }
   function showStart() {
     fillMissions();
+    syncTripButtons();
+    Sound.setTempo(112, 0);
     document.getElementById('rankStart').textContent = rankText();
     document.getElementById('startTag').textContent = 'Syndikat-Kurier · ' + districtFor(selectedDistrict).name;
     document.getElementById('dailyInfo').textContent = `Daily Run ${dayKey}: dieselbe Stadt für alle, immer in Sektor 7. Dein Bestwert: ${dailyBest}`;
@@ -856,16 +919,17 @@
       .sort((a, b) => b.score - a.score || b.date.localeCompare(a.date))
       .slice(0, 10)
     : [];
-  let leaderboard = { normal: [], daily: [] }, runDate = '';
+  let leaderboard = { normal: [], daily: [], trip: [] }, runDate = '';
   try {
     const savedLeaderboard = JSON.parse(localStorage.getItem(LEADERBOARD_KEY));
     if (savedLeaderboard) {
       leaderboard.normal = cleanLeaderboard(savedLeaderboard.normal, 'normal');
       leaderboard.daily = cleanLeaderboard(savedLeaderboard.daily, 'daily');
+      leaderboard.trip = cleanLeaderboard(savedLeaderboard.trip, 'trip');
     }
   } catch (e) {}
   function saveLeaderboardRun() {
-    const runMode = mode === 'daily' ? 'daily' : 'normal';
+    const runMode = mode === 'daily' || mode === 'trip' ? mode : 'normal';
     leaderboard[runMode] = [...leaderboard[runMode], { score: Math.max(0, Math.floor(score)), mode: runMode, date: runDate || localDateKey(), district: district.name }]
       .sort((a, b) => b.score - a.score || b.date.localeCompare(a.date))
       .slice(0, 10);
@@ -896,7 +960,7 @@
       result.textContent = `${entry.score} Punkte`;
       const date = document.createElement('span');
       const [year, month, day] = entry.date.split('-');
-      date.textContent = `${entry.mode === 'daily' ? 'Daily Run' : 'Standard'} · ${entry.district ? entry.district + ' · ' : ''}${day}.${month}.${year}`;
+      date.textContent = `${entry.mode === 'daily' ? 'Daily Run' : entry.mode === 'trip' ? 'Neon-Trip' : 'Standard'} · ${entry.district ? entry.district + ' · ' : ''}${day}.${month}.${year}`;
       details.append(result, date);
       row.append(rank, details);
       container.append(row);
@@ -905,6 +969,7 @@
   function openLeaderboard() {
     renderLeaderboardSection('normalLeaderboard', 'Standard', leaderboard.normal);
     renderLeaderboardSection('dailyLeaderboard', 'Daily Run', leaderboard.daily);
+    renderLeaderboardSection('tripLeaderboard', 'Cosmic Neon-Trip', leaderboard.trip);
     document.getElementById('start').hidden = true;
     document.getElementById('leaderboard').hidden = false;
   }
@@ -1045,6 +1110,8 @@
   let heat = 0, loot = 0, drones = [], droneTimer = 3, heatShown = -1, cause = '';
   let best = 0;
   try { best = +localStorage.getItem('nh-best') || 0; } catch (e) {}
+  let tripBest = 0;
+  try { tripBest = +localStorage.getItem('nh-best-trip') || 0; } catch (e) {}
 
   // Zufall: normal Math.random; beim Erzeugen einer Reihe ein fester Zufall aus Seed + Reihennummer.
   // So bekommt im Daily Run jede:r am selben Tag exakt dieselbe Stadt.
@@ -1170,6 +1237,7 @@
     dataHintShown = runs >= 3; hintLeft = 0; evLast = ''; blackoutK = 0; fogK = 0;
     points = 0; combo = 0; comboTimer = 0; mult = 1; hopId = 0; nmHop = -1; slow = 0; popups = [];
     pw = {}; invuln = 0; powersKey = ''; renderPowers();
+    tripStage = 1; tctx.clearRect(0, 0, W, H);
     updateCombo();
     updateHud();
   }
@@ -1201,7 +1269,30 @@
       const m = Math.min(5, 1 + Math.floor(combo / 6));
       if (m > mult) { mult = m; Sound.combo(m); popup(nc + .5, nr + 1, '×' + m + ' COMBO', P.cyan); }
       mult = m;
-      points += mult;
+      points += mult * scoreMul();
+      if (mode === 'trip') {
+        // Beat-Sprung: genau auf den Bass gesprungen?
+        const b = Sound.beat();
+        if (Math.min(b.since, b.to) <= TRIP.beatWindow) {
+          const bonus = TRIP.beatBonus * mult * scoreMul();
+          points += bonus; run.beats = (run.beats || 0) + 1;
+          comboTimer = COMBO_WINDOW + TRIP.beatCombo;
+          popup(nc + .5, nr + 1.3, 'BEAT +' + bonus, '#7df9ff');
+          burst(nc + .5, nr + .5, 10, ['#7df9ff', '#ff6bd6', '#ffffff'], 2.2, .4);
+        }
+        // nächste Stufe?
+        const st = Math.min(TRIP.maxStage, 1 + Math.floor(nr / TRIP.stageRows));
+        if (st > tripStage) {
+          tripStage = st;
+          Sound.sting('win');
+          if (!ev) {
+            document.documentElement.style.setProperty('--ev', '#ff6bd6');
+            document.getElementById('bannerTitle').textContent = 'NEON-TRIP ' + ROMAN[st - 1];
+            document.getElementById('bannerSub').textContent = 'Schneller, greller, lauter';
+            bannerEl.hidden = false; hintLeft = 1.6;
+          }
+        }
+      }
       updateCombo(true);
     }
     Sound.hop(combo);
@@ -1258,6 +1349,7 @@
     runDate = localDateKey();
     runSeed = mode === 'daily' ? 'daily-' + dayKey : String(Math.random());
     applyDistrict(mode === 'daily' ? DISTRICTS[0] : districtFor(selectedDistrict));
+    Sound.setTempo(mode === 'trip' ? TRIP.bpm : 112, mode === 'trip' ? 5 : 0);
     Sound.init(); Sound.duck(false);
     runs++; try { localStorage.setItem('nh-runs', runs); } catch (e) {}
     reset();
@@ -1283,7 +1375,7 @@
         if (gap < 0 || gap > .35) continue;
         if (away && (right ? r.dir < 0 : r.dir > 0)) continue;
         nmHop = hopId; run.near++;
-        const nmBonus = 2 * mult * (evActive('konvoi') ? 3 : 1);
+        const nmBonus = 2 * mult * (evActive('konvoi') ? 3 : 1) * scoreMul();
         points += nmBonus; score = points; updateHud();
         comboTimer = COMBO_WINDOW; updateCombo();
         popup(px + .5, row + 1, 'KNAPP! +' + nmBonus, P.magenta);
@@ -1344,7 +1436,7 @@
     if (!silent && ev.type === 'blackout') run.blackout++;
     if (!silent && ev.type === 'razzia') {
       run.razzia++;
-      const bonus = 15 * mult;
+      const bonus = 15 * mult * scoreMul();
       points += bonus; score = points; updateHud();
       popup(player.col + .5, player.row + 1.5, 'RAZZIA ÜBERLEBT +' + bonus, P.violet);
       Sound.sting('win');
@@ -1376,7 +1468,7 @@
 
   function grabLoot(c, r) {
     loot++;
-    const lootVal = 3 * mult * (evActive('rush') ? 2 : 1) * (evActive('gold') ? 3 : 1);
+    const lootVal = 3 * mult * (evActive('rush') ? 2 : 1) * (evActive('gold') ? 3 : 1) * scoreMul();
     points += lootVal;
     Sound.loot();
     popup(c + .5, r + 1, '+' + lootVal, P.gold);
@@ -1401,7 +1493,7 @@
   function updateHud() {
     document.getElementById('loot').textContent = '◆ ' + loot;
     document.getElementById('score').textContent = score;
-    document.getElementById('best').textContent = (mode === 'daily' ? 'Daily ' : 'Best ') + Math.max(mode === 'daily' ? dailyBest : best, score);
+    document.getElementById('best').textContent = (mode === 'daily' ? 'Daily ' : mode === 'trip' ? 'Trip ' : 'Best ') + Math.max(mode === 'daily' ? dailyBest : mode === 'trip' ? tripBest : best, score);
   }
 
   function die(why) {
@@ -1431,8 +1523,9 @@
     if (navigator.vibrate) navigator.vibrate([40, 30, 60]);
     checkMissions();
     saveLeaderboardRun();
-    const prevBest = mode === 'daily' ? dailyBest : best;
+    const prevBest = mode === 'daily' ? dailyBest : mode === 'trip' ? tripBest : best;
     if (mode === 'daily') { if (score > dailyBest) { dailyBest = score; try { localStorage.setItem('nh-daily-' + dayKey, dailyBest); } catch (e) {} } }
+    else if (mode === 'trip') { if (score > tripBest) { tripBest = score; try { localStorage.setItem('nh-best-trip', tripBest); } catch (e) {} } }
     else if (score > best) { best = score; try { localStorage.setItem('nh-best', best); } catch (e) {} }
     // Fortschritt von Sammel-Missionen über Runs hinweg mitnehmen
     for (const a of ms.active) { const M = mdef(a.id); if (M.total && !a.done) a.prog += M.val(run) || 0; }
@@ -1444,7 +1537,7 @@
       document.getElementById('overScore').textContent = score;
       const rec = score > prevBest && score > 0;
       document.getElementById('overBest').textContent = `◆ ${loot} Beute · Reihe ${player.maxRow} · ` + (rec ? 'Neuer Rekord' : 'Rekord: ' + Math.max(prevBest, score));
-      document.getElementById('overMode').textContent = (mode === 'daily' ? `Daily Run ${dayKey} · ` : '') + district.name;
+      document.getElementById('overMode').textContent = (mode === 'daily' ? `Daily Run ${dayKey} · ` : mode === 'trip' ? `Cosmic Neon-Trip · Stufe ${ROMAN[tripStage - 1]} · ${shownRun.beats || 0} Beats · ` : '') + district.name;
       document.getElementById('rankOver').textContent = rankText();
       renderMissions(document.getElementById('missionsOver'), 'Missionen');
       const box = document.getElementById('shareBox');
@@ -1467,7 +1560,7 @@
   function update(dt) {
     const level = Math.floor(heat);
     const slowF = pw.slow > 0 ? .4 : 1;              // Zeitlupe-Hack bremst alles außer dich
-    const speedMult = (1 + level * .06) * (evActive('rush') ? 1.3 : 1) * (evActive('ampel') ? .3 : 1) * (evActive('konvoi') ? .7 : 1) * slowF;
+    const speedMult = (mode === 'trip' ? TRIP.speed + (tripStage - 1) * TRIP.speedPerStage : 1) * (1 + level * .06) * (evActive('rush') ? 1.3 : 1) * (evActive('ampel') ? .3 : 1) * (evActive('konvoi') ? .7 : 1) * slowF;
     const lo = Math.floor(camRow) - 2, hi = lo + Math.ceil(H / cell) + 4;
     for (let i = lo; i <= hi; i++) {
       const r = getRow(i);
@@ -1565,7 +1658,7 @@
       checkMissions();
       if (combo > 0) {
         comboTimer -= dt;
-        comboBar.style.transform = `scaleX(${Math.max(0, comboTimer / COMBO_WINDOW)})`;
+        comboBar.style.transform = `scaleX(${Math.max(0, Math.min(1, comboTimer / COMBO_WINDOW))})`;
         if (comboTimer <= 0) { combo = 0; mult = 1; updateCombo(); }
       }
     }
@@ -1633,6 +1726,13 @@
   function draw(now) {
     ctx.save();
     if (shake > 0) ctx.translate(rand(-1, 1) * shake * 18, rand(-1, 1) * shake * 18);
+    // Trip: Bild pumpt im Takt (Zoom zum Bass, stärker in höheren Stufen)
+    const b = Sound.beat();
+    beatPulse = Math.max(0, 1 - b.since / .22);
+    if (tripFx()) {
+      const z = 1 + (.018 + .005 * tripStage) * beatPulse;
+      ctx.translate(W / 2, H * .66); ctx.scale(z, z); ctx.translate(-W / 2, -H * .66);
+    }
     ctx.fillStyle = P.night; ctx.fillRect(-20, -20, W + 40, H + 40);
     const lo = Math.floor(camRow) - 1, hi = lo + Math.ceil(H / cell) + 3;
     const t = now / 1000;
@@ -1739,6 +1839,14 @@
       ctx.fillRect(0, rowY(d.row), W, cell);
       ctx.globalAlpha = 1;
     }
+    // Trip-Lichtschweife: alte Bilder verblassen, dann auf die Stadt legen
+    const trails = tripFx();
+    if (trails) {
+      tctx.globalCompositeOperation = 'destination-out'; tctx.fillStyle = 'rgba(0, 0, 0, .28)'; tctx.fillRect(0, 0, W, H);
+      tctx.globalCompositeOperation = 'source-over';
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .55;
+      ctx.drawImage(trail, 0, 0); ctx.restore();
+    }
     // Fahrzeuge (Hover-Taxis bzw. Geldtransporter)
     for (let i = lo; i <= hi; i++) {
       const r = getRow(i);
@@ -1750,6 +1858,7 @@
           const x = (c.x - 4 + off) * cell;
           if (x > W + cell || x + c.w * cell < -cell) continue;
           blit(s, x + 2, y + cell * .19 + bob);
+          if (trails) tctx.drawImage(s.c, x + 2 - s.pad, y + cell * .19 + bob - s.pad, s.w, s.h);
         }
       }
     }
@@ -1768,6 +1877,12 @@
       blit(ps, px + (cell - s) / 2, py + (cell - s) / 2 - lift);
       ctx.globalAlpha = 1;
       const cxp = px + cell / 2, cyp = py + cell / 2 - lift;
+      if (trails) tctx.drawImage(ps.c, px + (cell - s) / 2 - ps.pad, py + (cell - s) / 2 - lift - ps.pad, ps.w, ps.h);
+      if (mode === 'trip' && state === 'play') {     // Beat-Ring: schrumpft auf dich zu – trifft er dich, ist der Bass da
+        const r0 = cell * (.48 + 1.3 * Math.min(1, b.to / b.period));
+        ctx.strokeStyle = '#7df9ff'; ctx.lineWidth = 2; ctx.globalAlpha = .35 + .5 * (1 - Math.min(1, b.to / b.period));
+        ctx.beginPath(); ctx.arc(cxp, cyp, r0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+      }
       if (pw.shield > 0) {                           // Schild-Ring
         ctx.strokeStyle = P.cyan; ctx.lineWidth = 2; ctx.globalAlpha = .55 + .25 * Math.sin(t * 6);
         ctx.beginPath(); ctx.arc(cxp, cyp, cell * .48, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
@@ -1911,6 +2026,20 @@
     }
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'lighter';
+    // Trip: Warp-Streifen rasen aus der Mitte nach außen, Neon blitzt sanft im Takt
+    if (tripFx()) {
+      if (!warp.length) warp = Array.from({ length: 46 }, () => ({ a: Math.random() * Math.PI * 2, d: Math.random(), sp: .25 + Math.random() * .5 }));
+      const cx0 = W / 2, cy0 = H * .38, maxR = Math.hypot(W, H) * .6;
+      ctx.strokeStyle = '#d9f6ff'; ctx.lineWidth = 1.5; ctx.globalAlpha = .16 + .14 * beatPulse;
+      ctx.beginPath();
+      for (const w of warp) {
+        const r1 = w.d * w.d * maxR, r2 = r1 + 8 + w.d * 40;
+        ctx.moveTo(cx0 + Math.cos(w.a) * r1, cy0 + Math.sin(w.a) * r1); ctx.lineTo(cx0 + Math.cos(w.a) * r2, cy0 + Math.sin(w.a) * r2);
+      }
+      ctx.stroke();
+      ctx.fillStyle = P.magenta; ctx.globalAlpha = .05 * beatPulse; ctx.fillRect(-20, -20, W + 40, H + 40);   // sanfter Takt-Schimmer, kein harter Blitz
+      ctx.globalAlpha = 1;
+    }
     // Regen
     ctx.globalAlpha = .22; ctx.strokeStyle = P.violet; ctx.lineWidth = 1;
     ctx.beginPath();
@@ -1939,6 +2068,12 @@
     const ts = slow > 0 ? .4 : 1;                  // kurze Zeitlupe nach einem Near-Miss
     slow = Math.max(0, slow - dt);
     update(dt * ts);
+    // Trip: Warp bewegen, Farben wandern durchs Spektrum (macht der Grafikchip per CSS-Filter)
+    if (tripFx()) {
+      for (const w of warp) { w.d += w.sp * dt * (1 + tripStage * .25); if (w.d > 1) { w.d = .02; w.a = Math.random() * Math.PI * 2; } }
+      hue = (hue + dt * (18 + tripStage * 7)) % 360;
+      canvas.style.filter = `hue-rotate(${hue | 0}deg) saturate(1.35)`;
+    } else if (canvas.style.filter) canvas.style.filter = '';
     draw(now);
     requestAnimationFrame(frame);
   }
@@ -1957,6 +2092,12 @@
   }
   document.getElementById('playBtn').addEventListener('click', () => handleOverlayTap('normal'));
   document.getElementById('dailyBtn').addEventListener('click', () => handleOverlayTap('daily'));
+  document.getElementById('tripBtn').addEventListener('click', () => { if (rankIdx() >= TRIP.rank) handleOverlayTap('trip'); });
+  document.getElementById('fxBtn').addEventListener('click', () => {
+    fxLow = !fxLow;
+    try { localStorage.setItem('nh-fx-low', fxLow ? '1' : '0'); } catch (e) {}
+    syncTripButtons();
+  });
   document.getElementById('leaderboardBtn').addEventListener('click', openLeaderboard);
   document.getElementById('leaderboardBackBtn').addEventListener('click', showStart);
   document.getElementById('wardrobeBtn').addEventListener('click', openWardrobe);

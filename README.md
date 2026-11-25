@@ -36,6 +36,10 @@ Ein Endless-Hopper im Neon-Cyberpunk-Look fürs iPhone. Du bist Kurier eines Syn
 | ⬡ Tarnmodus | 6 s unsichtbar für Drohnen, Heat eingefroren |
 | ⬡ Magnet | 8 s lang wird Beute von den Nachbarfeldern angezogen |
 
+## Cosmic Neon-Trip
+
+Eigener Modus, freigeschaltet ab Rang **Runner**: Verkehr 1,6× so schnell, Punkte doppelt, Musik mit 140 statt 112 BPM. Springst du genau auf den Bass, gibt es **Beat-Bonus** und die Combo hält länger – ein schrumpfender Ring um deine Figur zeigt den Takt. Alle 25 Reihen wird es eine Stufe intensiver (bis Stufe VI). Effekte: Farbrausch, Lichtschweife, Beat-Puls, Warp-Streifen. Im Menü lassen sich die Effekte reduzieren („Trip-Effekte“); bei „Bewegung reduzieren“ am Gerät sind sie von Anfang an aus. Eigene Bestenliste.
+
 ## Daily Run und Missionen
 
 - **Daily Run:** Jeden Tag eine feste Stadt, für alle gleich (nach lokalem Datum). Eigener Tagesbestwert und ein Ergebnis zum Kopieren und Teilen.

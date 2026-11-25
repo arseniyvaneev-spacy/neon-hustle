@@ -36,6 +36,7 @@
 - Missionen mit Sternen und 6 Rängen
 - Signature-Events pro Bezirk (Chance 45 % statt eines allgemeinen Events): Ampel-Hack (Verkehr kriecht), Hafennebel (Sicht nur ~2 Reihen, keine Drohnen), Goldrausch (Beute überall, ×3), Express-Takt (Züge im Dauertakt, Gleis +5), Schwerlast-Konvoi (Verkehr langsamer, Near-Miss ×3)
 - Faire Treffer: bis zur Hälfte eines Sprungs zählt das alte Feld; kleinere Trefferzonen (`HIT_PAD`, `CAR_SHRINK`); Drohnen nie über Gassen
+- Cosmic Neon-Trip (ab Rang Runner, `TRIP`): schneller, Punkte ×2, Beat-Sprung-Bonus, Stufen alle 25 Reihen, psychedelische Effekte (abschaltbar), eigene Bestenliste
 - Bestenliste (lokal): Top 10 für Standard und Daily getrennt, mit Datum und Bezirk
 - Garderobe: vier Outfits (Syndikat-Kurier, Neonläufer, Nachtgeist, Pulse-Rider), freigeschaltet bei 0/4/8/12 Sternen; ändern nur die Farben
 - Bezirke: Sektor 7, Hafen 9, Neon-Basar, Kuppelstadt, Untergrund, freigeschaltet über den Rang (0–4); eigene Palette und Reihen-Mischung (`DISTRICTS`), Steuerung und Punkte gleich. Der Daily Run spielt immer in Sektor 7.
