@@ -13,7 +13,7 @@ Ein Endless-Hopper im Neon-Cyberpunk-Look fürs iPhone. Du bist Kurier eines Syn
 **Sonst:**
 
 - **Am Rechner:** `index.html` im Browser öffnen. Steuerung mit den Pfeiltasten, `M` schaltet den Ton.
-- **Auf dem iPhone:** Tippen = vorwärts, Wischen = links, rechts oder zurück. Steht der Stummschalter auf lautlos, bleibt das Spiel stumm.
+- **Auf dem iPhone:** Tippen = vorwärts, Wischen = links, rechts oder zurück, Knopf „Super“ = Supersprung. Steht der Stummschalter auf lautlos, bleibt das Spiel stumm.
 
 ## Mechaniken
 
@@ -27,6 +27,10 @@ Ein Endless-Hopper im Neon-Cyberpunk-Look fürs iPhone. Du bist Kurier eines Syn
 | Safehouse | Heat kühlt schnell ab, keine Drohnen – kostet aber die Combo |
 | Magnetbahn | Gleis blinkt rot und läutet, dann rast ein langer Zug durch |
 | Laser-Gitter | Gassen mit Laser im Takt (flackert vor dem Einschalten); cyan markierte Spalten sind immer frei |
+| Supersprung | Leertaste, Shift oder Knopf „Super“: 2 oder 3 Reihen auf einmal, gleiche Spalte (ist das Ziel ein Gebäude, springst du in die nächste freie). 7 s Pause. |
+| Katzen | Vier Katzen sitzen am Rand. Manchmal springt eine und schubst dich eine Spalte zur Seite – nie in eine Wand. |
+| Stadt aus Blöcken | Avenuen mit Namen, Zebrastreifen, Gassen mit Gebäuden am Rand, Plätze, Parks mit Bäumen und Flüsse. Spalten 2–6 sind in Gassen und Plätzen immer frei, Parks haben immer eine Lücke von 3 Spalten. Parks und Flüsse entstehen aus Rauschen (Value-Noise), der Daily ist für alle gleich. |
+| Bau-Animation | Die Stadt baut sich vor dir von der Mitte nach außen auf. Deine Reihe und die nächste sind immer fertig. |
 | Blackout | Stadt dunkel, nur Lichtkreis und Scheinwerfer; keine Drohnen, Heat kühlt doppelt |
 | Rush Hour | Verkehr 45 % schneller, Beute zählt doppelt |
 | Razzia | Heat +2 und Drohnenstaffel; wer überlebt, bekommt Bonus |
@@ -50,7 +54,7 @@ Du bist Kurier Nr. 7, ohne Erinnerung, mit einem versiegelten Paket – und du w
 
 ## Cosmic Neon-Trip
 
-Eigener Modus, freigeschaltet ab Rang **Runner**: Verkehr 1,6× so schnell, Punkte doppelt, Musik mit 140 statt 112 BPM. Springst du genau auf den Bass, gibt es **Beat-Bonus** und die Combo hält länger – ein schrumpfender Ring um deine Figur zeigt den Takt. Alle 25 Reihen wird es eine Stufe intensiver (bis Stufe VI). Effekte: Farbrausch, Lichtschweife, Beat-Puls, Warp-Streifen. Im Menü lassen sich die Effekte reduzieren („Trip-Effekte“); bei „Bewegung reduzieren“ am Gerät sind sie von Anfang an aus. Eigene Bestenliste.
+Eigener Modus, freigeschaltet ab Rang **Runner**: Verkehr 1,6× so schnell, Punkte doppelt, Musik mit 140 statt 112 BPM. Springst du genau auf den Bass, gibt es **Beat-Bonus** und die Combo hält länger – ein schrumpfender Ring um deine Figur zeigt den Takt. Alle 25 Reihen wird es eine Stufe intensiver (bis Stufe VI). Effekte: Nachbilder mit Farbdrift, Tunnelringe, Bézier-Gitter und Beat-Puls. Das Gameplay bleibt dasselbe Raster-Hüpfen (inklusive Supersprung). Läuft der Trip dauerhaft zu langsam, schaltet das Spiel die Optik selbst ab. Im Menü lassen sich die Effekte reduzieren („Trip-Effekte“); bei „Bewegung reduzieren“ am Gerät sind sie von Anfang an aus. Eigene Bestenliste.
 
 ## Daily Run und Missionen
 
