@@ -12,6 +12,14 @@ Neon Hustle: ein Endless-Hopper im Neon-Cyberpunk-Look, gebaut als Web-Spiel fü
 - Farben: Lila, Pink, Blau, Cyan auf fast Schwarz; Gold nur für Beute.
 - Der Nutzer lernt programmieren: neue Mechaniken mit verständlichen Kommentaren und gut benannten Stellschrauben (Konstanten) bauen.
 
+## Spiellogik (nicht aufweichen)
+
+- Die **Logikzelle gilt sofort**: `player.col/row` ändern sich beim Tastendruck. `hopT` ist nur Zeichnung, `HOP_MS` bremst `move()` nie. Kollisionen (Autos, Laser, Bahn, Drohnen, Datenkanal) prüfen nie die gezeichnete Position.
+- Kein `shadowBlur` pro Frame; Glühen in Sprites backen.
+- **Daily bleibt deterministisch**: jede Reihe aus `mulberry32(hashStr(runSeed + ':' + i))`, Landschaft aus `landSeed`, Katzen-Reihen aus Hashes. Reihen werden immer der Reihe nach erzeugt. Kein `Math.random()` in der Reihenerzeugung.
+- In Gassen und Plätzen bleiben die Spalten 2–6 frei, Parks haben eine Lücke von 3 Spalten mit freier Mitte. Beute, Power-ups und Laser-Lücken liegen nie unter Gebäuden oder Bäumen.
+- `prefers-reduced-motion`: Nachbilder, Trip-Optik und starkes Wackeln aus.
+
 ## Story
 
 Ton: düster, leiser psychologischer Horror – Unbehagen statt Schockmomente. **Die Wendung der Story (die späten Einträge in `MEMORIES`) nicht verraten** – nicht in Antworten, Commits, PR-Texten oder Doku. Snow soll sie beim Spielen selbst entdecken.

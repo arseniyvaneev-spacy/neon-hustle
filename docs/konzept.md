@@ -35,7 +35,9 @@
 - Daily Run (feste Stadt pro Tag per Seed) mit teilbarem Ergebnis
 - Missionen mit Sternen und 6 Rängen
 - Signature-Events pro Bezirk (Chance 45 % statt eines allgemeinen Events): Ampel-Hack (Verkehr kriecht), Hafennebel (Sicht nur ~2 Reihen, keine Drohnen), Goldrausch (Beute überall, ×3), Express-Takt (Züge im Dauertakt, Gleis +5), Schwerlast-Konvoi (Verkehr langsamer, Near-Miss ×3)
-- Faire Treffer: bis zur Hälfte eines Sprungs zählt das alte Feld; kleinere Trefferzonen (`HIT_PAD`, `CAR_SHRINK`); Drohnen nie über Gassen
+- Sprung: Die Logikzelle gilt sofort, der Bogen (`HOP_MS`) ist reine Zeichnung mit Squash & Stretch, Neigung, Landering und Nachbildern; Eingaben warten nie. Kollisionen prüfen immer `player.col/row`; kleine Trefferzonen (`HIT_PAD`, `CAR_SHRINK`); Drohnen nie über Gassen
+- Supersprung (`LEAP_CD` 7 s, Leertaste/Shift/Knopf), vier Katzen am Rand (`ambushSide`, `updateCats`)
+- Stadt aus Blöcken (`beginCity`, `city`, `solidAt`): Avenue, Zebrastreifen, Gasse, Platz, Park, Fluss; Landschaft aus Value-Noise/FBM (`landSeed`); Bau-Animation (`BUILD`); niedriger Horizont mit Laternen, Vignette
 - Cosmic Neon-Trip (ab Rang Runner, `TRIP`): schneller, Punkte ×2, Beat-Sprung-Bonus, Stufen alle 25 Reihen, psychedelische Effekte (abschaltbar), eigene Bestenliste
 - Story „Die Spiegelkönigin“ (Schneewittchen-Motiv, leiser psychologischer Horror): Der Jäger als Verfolger (`HUNTER`), 16 Erinnerungs-Splitter in 5 Kapiteln (`MEMORIES`, `CHAPTERS`), Funksprüche von SPIEGEL und Eins (`RADIO`), Archiv-Screen
 - Bestenliste (lokal): Top 10 für Standard und Daily getrennt, mit Datum und Bezirk

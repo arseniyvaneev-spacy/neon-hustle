@@ -234,6 +234,17 @@
     font: 700 11px var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--ink);
   }
   #powers .pw i { display: block; height: 3px; border-radius: 2px; background: var(--pc); transform-origin: left; }
+  #leapBtn {
+    position: fixed; z-index: 5;
+    right: calc(max(14px, env(safe-area-inset-right, 0px)) + 54px);   /* links neben dem Ton-Knopf */
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+    min-width: 64px; height: 44px; padding: 0 14px; border-radius: 22px;
+    border: 1.5px solid var(--cyan); background: rgb(13 2 33 / .7); color: var(--cyan);
+    font: 800 12px var(--display); letter-spacing: .12em; text-transform: uppercase;
+    box-shadow: 0 0 12px rgb(5 217 232 / .45);
+  }
+  #leapBtn:disabled { color: var(--dim); border-color: var(--dim); box-shadow: none; }
+  #leapBtn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
   #mute {
     position: fixed; z-index: 5;
     right: max(14px, env(safe-area-inset-right, 0px));
@@ -268,6 +279,7 @@
 </div>
 <div id="combo" hidden><b id="comboMult">×2</b><span id="comboCount">Combo 6</span><i><u id="comboBar"></u></i></div>
 <button id="mute" type="button" aria-label="Ton aus">♪</button>
+<button id="leapBtn" type="button" hidden aria-label="Supersprung">Super</button>
 <div id="banner" hidden><b id="bannerTitle">BLACKOUT</b><span id="bannerSub"></span></div>
 <div id="eventChip" hidden></div>
 <div id="powers"></div>
@@ -299,6 +311,8 @@
       <p><b>Der Jäger</b> folgt dir von unten. Bleib nicht zu lange stehen – im <b>Safehouse</b> verliert er deine Spur. Weiße <b>Erinnerungs-Splitter</b> erzählen, warum du rennst (Menü → Archiv).</p>
       <p><b>Cosmic Neon-Trip</b> (ab Rang Runner): alles schneller, Punkte doppelt. Springst du genau auf den Bass, gibt es <b>Beat-Bonus</b> – der schrumpfende Ring um dich zeigt den Takt.</p>
       <p><b>Magnetbahn</b>: blinkt das Gleis rot, kommt gleich ein Zug. <b>Laser</b>: flackert er, schaltet er gleich ein; freie Spalten sind cyan markiert.</p>
+      <p><b>Supersprung</b> (Leertaste, Shift oder der Knopf rechts unten): springt 2 oder 3 Reihen auf einmal. Danach 7 Sekunden Pause. <b>Katzen</b> am Rand schubsen dich manchmal eine Spalte zur Seite. Die Stadt baut sich vor dir auf – die Reihe, auf die du springst, ist immer fertig.</p>
+      <p>Im <b>Cosmic Neon-Trip</b> gelten dieselben Regeln. Nachbilder und Farbdrift sind reine Spiel-Optik, keine Substanz-Anleitung.</p>
       <p><b>⬡ Power-ups</b>: Schild, Zeitlupe, Tarnmodus, Magnet.</p>
       <p><b>Datenkanal</b>: auf die leuchtenden Pads springen, nicht in den Strom. <b>Safehouse</b>: hier kühlt Heat schnell ab, Drohnen kommen nicht rein.</p>
       <p>Ohne Pause vorwärts = <b>Combo-Multiplikator</b>. Knapp an Autos vorbei = <b style="color:var(--magenta)">Bonus</b>.</p>
@@ -457,7 +471,9 @@
         for (const k of kicks) { if (k <= now && k > last) last = k; if (k > now && k < next) next = k; }
         if (last === -Infinity) last = next - period;
         if (next === Infinity) next = last + period;
-        return { since: now - last, to: next - now, period };
+        // Hinkt der Audio-Planer hinterher, sind die gemerkten Schläge veraltet: dann im Takt weiterzählen (nie negativ)
+        const mod = v => ((v % period) + period) % period;
+        return { since: mod(now - last), to: mod(next - now) || period, period };
       },
       pause(on) { if (ac) on ? ac.suspend() : ac.resume(); },
       muffle(on) { if (ac) musicLP.frequency.setTargetAtTime(on ? 420 : 18000, ac.currentTime, .25); },
@@ -493,6 +509,8 @@
       zap() { tone('square', 1800, 150, .35, .15); noise(.25, .4, 8000, 0, 0, sfx, 'highpass'); },
       splash() { tone('square', 700, 60, .45, .16); noise(.4, .5, 6000, 300, 0, sfx, 'highpass'); },
       safe() { [57, 64, 69].forEach((n, k) => tone('sine', hz(n + 12), 0, .6, .12, ac && ac.currentTime + k * .07)); },
+      meow() { tone('sine', 880, 520, .16, .12); tone('sine', 660, 990, .2, .12, ac && ac.currentTime + .12); },
+      leap() { tone('square', 280, 1000, .18, .12); noise(.22, .3, 800, 6000); },
       shades() { tone('square', 2400, 900, .04, .12); noise(.12, .25, 3000, 9000, 0, sfx, 'highpass'); tone('triangle', 1320, 0, .18, .1, ac && ac.currentTime + .05); },
       heart() { tone('sine', 62, 40, .16, .55); tone('sine', 56, 36, .14, .4, ac && ac.currentTime + .17); },
       death() { tone('sawtooth', 240, 35, .7, .35); noise(.6, .6, 4000, 120, 0, sfx, 'lowpass'); tone('sine', 90, 30, .5, .7); }
@@ -502,7 +520,10 @@
 
   const COLS = 9;
   const COMBO_WINDOW = 1.1;   // Sekunden bis die Combo verfällt
-  const HOP_MS = 75;          // Dauer eines Hüpfers in ms (kleiner = flinker)
+  const HOP_MS = 120;         // Dauer des Sprung-BOGENS in ms – reine Zeichnung. Die Logikzelle gilt sofort, Eingaben warten nie.
+  const LEAP_CD = 7;          // Supersprung: Sekunden Pause danach
+  const CAM_LAG = 10;         // wie schnell die Kamera der Logikzelle folgt (größer = straffer)
+  const BUILD = { rowDelay: 70, cellDelay: 120, cellTime: 380 };   // Bau-Animation: ms pro Reihe Abstand, pro Spalte Abstand von der Mitte, pro Zelle
   // ---------- Story: Die Spiegelkönigin ----------
   // 16 Erinnerungen in 5 Kapiteln. Kapitel n wird mit Rang n freigeschaltet, die Splitter kommen in fester Reihenfolge.
   const CHAPTERS = ['Das Paket', 'Die Sieben', 'Der Jäger', 'Der Spiegel', 'Schnee'];
@@ -596,21 +617,34 @@
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   let W, H, cell, dpr;
-  // Zweite, unsichtbare Leinwand für die Lichtschweife im Trip (nur Fahrzeuge und Figur)
-  const trail = document.createElement('canvas'), tctx = trail.getContext('2d');
-  let tripStage = 1, hue = 0, beatPulse = 0, warp = [];
+  // Trip-Optik: Das vorige Bild liegt in einer unsichtbaren Leinwand und wird als Nachbild zurückgemalt.
+  const world = document.createElement('canvas'), wctx = world.getContext('2d');
+  // Nachbilder sind weich → alles in HALBER Auflösung (ein Viertel der Pixel). ghost sammelt die Streifen, ghost2 filtert sie einmal.
+  const ghost = document.createElement('canvas'), gctx = ghost.getContext('2d');
+  const ghost2 = document.createElement('canvas'), g2ctx = ghost2.getContext('2d');
+  const HAS_FILTER = 'filter' in ctx;               // Safari kann ctx.filter oft nicht → dann Nachbilder ohne Farbdrift
+  let tripFresh = true;
+  // Leistungssicherung: läuft der Trip dauerhaft unter ~35 Bildern/s, schaltet das Spiel die Optik für diese Runde selbst ab
+  let avgDt = 1 / 60, slowT = 0, fxAuto = false;
+  let tripStage = 1, beatPulse = 0, vignette = null;
+  let leapCd = 0, landSeed = 0, cats = [], catRnd = Math.random;
+  let city = { kind: '', remain: 0, index: 0, blocks: [], name: '', hue: '#05d9e8' };
+  const revealAt = new Map();                        // Reihe → Zeitpunkt, ab dem sie sich aufbaut
   let hunter = { on: false, row: -99, col: 4, beatT: 0 }, radioQ = [], radioCur = null, radioSaid = {}, shard = { target: -1, placed: false }, foundThisRun = -1;
   let fxLow = matchMedia('(prefers-reduced-motion: reduce)').matches;
   try { const v = localStorage.getItem('nh-fx-low'); if (v !== null) fxLow = v === '1'; } catch (e) {}
-  const tripFx = () => mode === 'trip' && !fxLow && state !== 'menu';
+  const tripFx = () => mode === 'trip' && !fxLow && !fxAuto && state !== 'menu';
   const scoreMul = () => mode === 'trip' ? TRIP.points : 1;
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2); // 2x reicht, spart viel Rechenzeit
     W = canvas.clientWidth; H = canvas.clientHeight;
     canvas.width = W * dpr; canvas.height = H * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    trail.width = canvas.width; trail.height = canvas.height; tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    for (const c of [world, ghost, ghost2]) { c.width = Math.max(2, canvas.width >> 1); c.height = Math.max(2, canvas.height >> 1); }
+    tripFresh = true;
     cell = W / COLS;
+    vignette = ctx.createRadialGradient(W / 2, H * .55, Math.min(W, H) * .35, W / 2, H * .55, Math.hypot(W, H) * .62);
+    vignette.addColorStop(0, 'rgba(0, 0, 0, 0)'); vignette.addColorStop(1, 'rgba(0, 0, 0, .5)');
     sprites.clear();
   }
 
@@ -1254,7 +1288,7 @@
   let best = 0;
   try { best = +localStorage.getItem('nh-best') || 0; } catch (e) {}
   let tripBest = 0;
-  try { tripBest = +localStorage.getItem('nh-best-trip') || 0; } catch (e) {}
+  try { tripBest = +localStorage.getItem('nh-trip-best') || +localStorage.getItem('nh-best-trip') || 0; } catch (e) {}
 
   // Zufall: normal Math.random; beim Erzeugen einer Reihe ein fester Zufall aus Seed + Reihennummer.
   // So bekommt im Daily Run jede:r am selben Tag exakt dieselbe Stadt.
@@ -1280,71 +1314,77 @@
     rnd = mulberry32(hashStr(runSeed + ':' + i));
     try { return makeRowInner(i); } finally { rnd = Math.random; }
   }
-  function makeRowInner(i) {
-    const r = makeRowBase(i);
-    r.loot = i >= 4 && r.type !== 'data' && r.type !== 'rail' && !r.safehouse && rnd() < .2 ? Math.floor(rnd() * COLS) : -1;
-    r.power = null;
-    if (i >= 8 && r.type !== 'data' && r.type !== 'rail' && !r.safehouse && rnd() < POWER_CHANCE) {
-      let c = Math.floor(rnd() * COLS);
-      if (c === r.loot) c = (c + 3) % COLS;
-      r.power = { col: c, type: pick(Object.keys(POWERS)) };
-    }
-    return r;
+
+  // ---------- Value-Noise und FBM für die Landschaft ----------
+  // Dieselbe Saat wie der Daily Run (landSeed), kein String-Hash pro Sample → für alle gleich und schnell.
+  function h2(ix, iy) {
+    let h = (landSeed ^ Math.imul(ix | 0, 374761393) ^ Math.imul(iy | 0, 668265263)) | 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
   }
-  function makeData(i, prev) {
-    const level = Math.min(i / 160, 1);
-    const dir = prev.type === 'data' ? -prev.dir : (rnd() < .5 ? 1 : -1);
-    const speed = rand(.9, 1.5) + level * 1.1;
-    const plats = [];
-    let x = rand(0, 1.5);
-    while (x < COLS + 8) {
-      const w = pick([2, 2.5, 3]);
-      plats.push({ x, w });
-      x += w + rand(1, 1.9);                     // Lücken klein genug, dass bald eine Plattform kommt
-    }
-    return { type: 'data', dir, speed, plats, span: x, run: prev.type === 'data' ? prev.run + 1 : 1, decor: [] };
+  const fade = t => t * t * (3 - 2 * t);
+  function vnoise(x, y) {
+    const ix = Math.floor(x), iy = Math.floor(y), fx = fade(x - ix), fy = fade(y - iy);
+    const a = h2(ix, iy), b = h2(ix + 1, iy), c = h2(ix, iy + 1), d = h2(ix + 1, iy + 1);
+    return a + (b - a) * fx + (c - a) * fy + (a - b - c + d) * fx * fy;
   }
-  function onPlatform(row, x) {
-    const r = getRow(row), cx = x + .5;
-    for (const p of r.plats) for (const off of [0, -r.span, r.span]) {
-      const a = p.x - 4 + off;
-      if (cx > a - PAD_GRACE && cx < a + p.w + PAD_GRACE) return true;
-    }
-    return false;
+  const fbm = (x, y) => .55 * vnoise(x, y) + .30 * vnoise(x * 2.05, y * 2.05) + .15 * vnoise(x * 4.07, y * 4.07);
+
+  // ---------- Stadt aus Blöcken ----------
+  // Ein Block (city) hat kind, remain (noch folgende Reihen), index, blocks (Spalten mit Gebäude/Baum), name, hue.
+  // Solange remain > 0, wird derselbe Block fortgesetzt. Gebaut wird nur in genau dieser Reihenfolge → Daily bleibt gleich.
+  const NAME_A = ['KAI', 'GLAS', 'NEON', 'RUNEN', 'NACHT', 'DRAHT', 'PULS', 'IRIS', 'ASCHE', 'VOLT'];
+  const NAME_B = ['WEG', 'GASSE', 'NORD', 'KANTE', 'HOF', 'LINIE', 'MARKT', 'DREI'];
+  const LAND_WEIGHT = .3;                          // Gewicht von Park/Fluss gegenüber Avenue und Gasse
+  const cityName = () => pick(NAME_A) + '-' + pick(NAME_B);
+  const solidAt = (col, row) => getRow(row).blocks.includes(col);
+  function setCity(kind, depth, blocks, name, hue) { city = { kind, remain: depth - 1, index: 0, blocks, name, hue }; }
+  // Gebäude nur am Rand: Spalte 0 und 8 oft, 1 und 7 selten (nur neben einem Gebäude). Spalten 2–6 bleiben immer frei.
+  function edgeBlocks() {
+    const b = [];
+    if (rnd() < .7) { b.push(0); if (rnd() < .2) b.push(1); }
+    if (rnd() < .7) { b.push(COLS - 1); if (rnd() < .2) b.push(COLS - 2); }
+    return b;
   }
-  function makeRowBase(i) {
-    const decor = [];
-    const n = rnd() < .7 ? 1 + Math.floor(rnd() * 2) : 0;
-    for (let k = 0; k < n; k++) decor.push({ x: rand(0, COLS - 1.5), len: rand(.6, 1.6), color: pick(district.deco), ph: rand(0, 6.28), top: rnd() < .5 });
-    if (i < 3) return { type: 'safe', decor };
+  function beginLandscape(i) {
+    const y = i * .085, elev = fbm(.8, y), moist = fbm(6.5, y);
+    if (elev < .42) return setCity('river', 2, [], 'TAL-' + pick(NAME_B), '#25f4ee');   // begehbar, kein Hindernis
+    // Park: eine 3 Spalten breite Lücke bleibt frei. Das Fenster mit dem wenigsten Rauschen, aber immer
+    // so, dass die Mitte (Spalte 4) offen ist – der Park wird nie zugemauert.
+    let bestC = 2, bestV = 1e9;
+    for (let c0 = 2; c0 <= 4; c0++) {
+      let v = 0; for (let k = 0; k < 3; k++) v += fbm((c0 + k + 1) * .47, y);
+      if (v < bestV) { bestV = v; bestC = c0; }
+    }
+    const blocks = [];
+    for (let c = 0; c < COLS; c++) { if (c >= bestC && c < bestC + 3) continue; if (fbm(c * .47, y) > .56) blocks.push(c); }
+    const name = elev > .64 ? 'HANG' : moist > .6 ? 'MOOS' : 'WIESE';
+    return setCity('park', moist > .62 ? 4 : 3, blocks, name, '#3dff88');
+  }
+  function beginCity(i) {
+    const prevKind = city.kind;
+    if (i < 3) return setCity('spawn', 1, [], '', P.cyan);
+    if (i >= 15 && i - lastSafehouse >= 22 && rnd() < mix.safehouse) { lastSafehouse = i; return setCity('safehouse', 1, [], '', P.cyan); }
+    if (prevKind === 'avenue' && rnd() < .72) return setCity('cross', 1, [], '', '#e9f6ff');
+    if (i >= 10 && prevKind !== 'rail' && rnd() < mix.rail) return setCity('rail', 1, [], cityName(), '#c86bff');
+    if (i >= 6 && prevKind !== 'canal' && rnd() < mix.data) return setCity('canal', rnd() < .55 ? 2 : 1, [], cityName(), P.cyan);
+    const wAve = mix.road * 1.5 * TRAFFIC_DENSITY, wLand = i >= 8 ? LAND_WEIGHT : 0, wGas = (1 - mix.road) * .8;
+    let r = rnd() * (wAve + wLand + wGas);
+    if (r < wAve) {                                  // Avenue: unter Reihe 10 eine Spur, sonst meist zwei, ab 48 selten drei
+      const depth = i < 10 ? 1 : (i >= 48 && rnd() < .25 ? 3 : (rnd() < .8 ? 2 : 1));
+      return setCity('avenue', depth, [], cityName(), '#ff2a6d');
+    }
+    r -= wAve;
+    if (r < wLand) return beginLandscape(i);
+    if (rnd() < .16) return setCity('platz', 2, [0, COLS - 1], cityName(), P.cyan);   // Platz: offene Mitte
+    return setCity('gasse', rnd() < .2 ? 3 : 2, edgeBlocks(), cityName(), pick(district.deco));
+  }
+  const freeCols = blocks => { const f = []; for (let c = 0; c < COLS; c++) if (!blocks.includes(c)) f.push(c); return f; };
+
+  function makeRoad(i) {
     const prev = rows.get(i - 1);
-    // Safehouse: frühestens ab Reihe 15, dann etwa alle 22–40 Reihen
-    if (i >= 15 && i - lastSafehouse >= 22 && rnd() < mix.safehouse) {
-      lastSafehouse = i;
-      return { type: 'safe', safehouse: true, decor: [] };
-    }
-    // Datenkanal: ab Reihe 6, Blöcke aus 1–3 Reihen
-    if (i >= 6 && prev && !prev.safehouse &&
-        ((prev.type === 'data' && prev.run < 3 && rnd() < .55) ||
-         (prev.type !== 'data' && rnd() < mix.data))) {
-      return makeData(i, prev);
-    }
-    const roadChance = (prev && prev.type === 'safe' ? Math.min(.95, mix.road + .18) : mix.road) * TRAFFIC_DENSITY;
-    // Magnetbahn: ab Reihe 10, nie zwei Gleise direkt hintereinander
-    if (i >= 10 && prev && prev.type !== 'rail' && rnd() < mix.rail) {
-      return { type: 'rail', dir: rnd() < .5 ? 1 : -1, len: 10, speed: 15, phase: 'idle', wait: rand(1, 4), warnT: 0, tx: 0, decor: [] };
-    }
-    if (rnd() > roadChance) {
-      const r = { type: 'safe', decor };
-      // Laser-Gitter: ab Reihe 14 in manchen Gassen; 1–2 Spalten bleiben immer frei
-      if (i >= 14 && rnd() < mix.laser) {
-        const g1 = Math.floor(rnd() * COLS);
-        r.laser = { t: rand(0, LASER.cycle), gaps: rnd() < .5 ? [g1] : [g1, (g1 + 4) % COLS] };
-      }
-      return r;
-    }
     const level = Math.min(i / 260, 1);           // wird mit der Zeit schneller (langsamer Anstieg)
-    const dir = rnd() < 0.5 ? -1 : 1;
+    const dir = prev && prev.type === 'road' && city.index > 0 ? -prev.dir : (rnd() < .5 ? -1 : 1);   // Richtung wechselt pro Spur
     let speed = (rand(1.0, 1.9) + level * 1.5) * TRAFFIC_SPEED;   // Zellen pro Sekunde
     // Laster: selten, nie zwei Laster-Spuren direkt hintereinander, und langsamer als Autos
     const isTruck = i > 10 && !(prev && prev.truck) && rnd() < mix.truck;
@@ -1360,19 +1400,80 @@
     }
     return { type: 'road', dir, speed, cars, span, truck: isTruck, color };
   }
+  function makeData(i) {
+    const prev = rows.get(i - 1);
+    const level = Math.min(i / 160, 1);
+    const dir = prev && prev.type === 'data' ? -prev.dir : (rnd() < .5 ? 1 : -1);
+    const speed = rand(.9, 1.5) + level * 1.1;
+    const plats = [];
+    let x = rand(0, 1.5);
+    while (x < COLS + 8) {
+      const w = pick([2, 2.5, 3]);
+      plats.push({ x, w });
+      x += w + rand(1, 1.9);                     // Lücken klein genug, dass bald eine Plattform kommt
+    }
+    return { type: 'data', dir, speed, plats, span: x, run: city.index + 1, decor: [] };
+  }
+  function onPlatform(row, x) {
+    const r = getRow(row), cx = x + .5;
+    for (const p of r.plats) for (const off of [0, -r.span, r.span]) {
+      const a = p.x - 4 + off;
+      if (cx > a - PAD_GRACE && cx < a + p.w + PAD_GRACE) return true;
+    }
+    return false;
+  }
+  function makeRowBase(i) {
+    if (city.remain > 0) { city.remain--; city.index++; } else beginCity(i);
+    const k = city.kind;
+    let r;
+    if (k === 'avenue') r = makeRoad(i);
+    else if (k === 'canal') r = makeData(i);
+    else if (k === 'rail') r = { type: 'rail', dir: rnd() < .5 ? 1 : -1, len: 10, speed: 15, phase: 'idle', wait: rand(1, 4), warnT: 0, tx: 0, decor: [] };
+    else {
+      r = { type: 'safe', decor: [] };
+      if (k === 'safehouse') r.safehouse = true;
+      if (k === 'gasse' || k === 'spawn' || k === 'platz') {
+        // Neon-Deko nur auf der freien Mitte
+        const n = rnd() < .7 ? 1 + Math.floor(rnd() * 2) : 0;
+        for (let q = 0; q < n; q++) r.decor.push({ x: rand(1.5, COLS - 3), len: rand(.6, 1.6), color: pick(district.deco), ph: rand(0, 6.28), top: rnd() < .5 });
+      }
+      // Laser-Gitter nur auf Gassen (ab Reihe 14); 1–2 freie Spalten bleiben immer offen, nie unter einem Gebäude
+      if (k === 'gasse' && i >= 14 && rnd() < mix.laser) {
+        const fc = freeCols(city.blocks), g1 = fc[Math.floor(rnd() * fc.length)];
+        r.laser = { t: rand(0, LASER.cycle), gaps: rnd() < .5 ? [g1] : [g1, (g1 + 4) % COLS] };
+      }
+    }
+    return Object.assign(r, { kind: k, blocks: city.blocks, cname: city.name, hue: city.hue, cidx: city.index, cfirst: city.index === 0, clast: city.remain === 0 });
+  }
+  function makeRowInner(i) {
+    const r = makeRowBase(i);
+    const free = freeCols(r.blocks), ok = r.type !== 'data' && r.type !== 'rail' && !r.safehouse && free.length;
+    // Beute und Power-ups liegen nie auf einem Gebäude oder Baum
+    r.loot = i >= 4 && ok && rnd() < .2 ? free[Math.floor(rnd() * free.length)] : -1;
+    r.power = null;
+    if (i >= 8 && ok && rnd() < POWER_CHANCE) {
+      let c = free[Math.floor(rnd() * free.length)];
+      if (c === r.loot) c = free[(free.indexOf(c) + 1) % free.length];
+      r.power = { col: c, type: pick(Object.keys(POWERS)) };
+    }
+    return r;
+  }
   function getRow(i) {
     // Reihen immer der Reihe nach erzeugen, damit der Daily Run für alle gleich ist
     while (genMax < i) { genMax++; rows.set(genMax, makeRow(genMax)); }
-    if (!rows.has(i)) rows.set(i, { type: 'safe', decor: [], loot: -1, power: null });
+    if (!rows.has(i)) rows.set(i, { type: 'safe', kind: 'gasse', blocks: [], decor: [], loot: -1, power: null, cidx: 1 });
     return rows.get(i);
   }
 
   function reset() {
     runEnded = false;
     rows = new Map(); genMax = -7; lastSafehouse = 0; inSafehouse = false;
+    city = { kind: '', remain: 0, index: 0, blocks: [], name: '', hue: '#05d9e8' }; landSeed = hashStr(runSeed);
+    revealAt.clear(); leapCd = 0; tripFresh = true; fxAuto = false; avgDt = 1 / 60; slowT = 0;
     run = { loot: 0, maxRow: 0, near: 0, maxMult: 1, score: 0, maxHeat: 0, data: 0, razzia: 0, blackout: 0, powers: 0, daily: mode === 'daily' ? 1 : 0 };
     for (let i = -6; i < 30; i++) getRow(i);
-    player = { col: 4, row: 0, fromCol: 4, fromRow: 0, hopT: 1, queued: null, maxRow: 0 };
+    player = { col: 4, row: 0, fromCol: 4, fromRow: 0, hopT: 1.35, arc: 1, dc: 0, dr: 0, landed: true, maxRow: 0 };
+    initCats();
     camRow = -2;
     score = 0; particles = []; shake = 0; glitch = 0;
     heat = 0; loot = 0; drones = []; droneTimer = 3; heatShown = -1;
@@ -1380,7 +1481,7 @@
     dataHintShown = runs >= 3; hintLeft = 0; evLast = ''; blackoutK = 0; fogK = 0;
     points = 0; combo = 0; comboTimer = 0; mult = 1; hopId = 0; nmHop = -1; slow = 0; popups = [];
     pw = {}; invuln = 0; powersKey = ''; renderPowers();
-    tripStage = 1; tctx.clearRect(0, 0, W, H);
+    tripStage = 1;
     hunter = { on: false, row: -99, col: 4, beatT: 0 };
     radioQ = []; radioCur = null; radioSaid = {}; foundThisRun = -1;
     document.getElementById('radio').hidden = true; document.getElementById('hunterEdge').style.opacity = 0;
@@ -1399,51 +1500,122 @@
     }
   }
 
-  // ---------- Eingabe ----------
-  function move(dc, dr) {
-    if (state !== 'play') return;
-    if (player.hopT < .5) { player.queued = [dc, dr]; return; } // ab 50 % des Sprungs gleich weiter
-    const nc = Math.round(player.col) + dc, nr = player.row + dr;
-    if (nc < 0 || nc >= COLS) return;
-    if (nr < Math.floor(camRow)) return;           // nicht aus dem Bild nach unten
-    nearMiss(player.row, player.col, false);        // in letzter Sekunde ausgewichen?
-    burst(player.col + .5, player.row + .2, 5, [P.cyan, P.violet], 1.2, .35);
-    player.fromCol = player.col; player.fromRow = player.row;
-    player.col = nc; player.row = nr; player.hopT = 0; hopId++;
-    if (nr > player.maxRow) {
-      if (getRow(nr).type === 'data') run.data++;
-      if (getRow(nr).type === 'rail' && evActive('express')) { points += 5 * mult; popup(nc + .5, nr + 1.6, 'GLEIS +' + 5 * mult, '#c86bff'); }
-      player.maxRow = nr;
-      combo++; comboTimer = COMBO_WINDOW;
-      const m = Math.min(5, 1 + Math.floor(combo / 6));
-      if (m > mult) { mult = m; Sound.combo(m); popup(nc + .5, nr + 1, '×' + m + ' COMBO', P.cyan); }
-      mult = m;
-      points += mult * scoreMul();
-      if (mode === 'trip') {
-        // Beat-Sprung: genau auf den Bass gesprungen?
-        const b = Sound.beat();
-        if (Math.min(b.since, b.to) <= TRIP.beatWindow) {
-          const bonus = TRIP.beatBonus * mult * scoreMul();
-          points += bonus; run.beats = (run.beats || 0) + 1;
-          comboTimer = COMBO_WINDOW + TRIP.beatCombo;
-          popup(nc + .5, nr + 1.3, 'BEAT +' + bonus, '#7df9ff');
-          burst(nc + .5, nr + .5, 10, ['#7df9ff', '#ff6bd6', '#ffffff'], 2.2, .4);
+  // ---------- Katzen am Rand ----------
+  // Vier kleine Katzen sitzen an den Rändern. Sie sind keine Hindernisse; wenn eine springt, schubst sie dich
+  // höchstens eine Spalte zur Seite – über das normale move(), also nie in eine Wand.
+  const CAT_COLORS = ['#ffd0ea', '#ffe7a8', '#c8f7ff', '#ffd0ea'];
+  const hashRow = (tag, row) => hashStr(runSeed + ':' + tag + ':' + row);
+  function ambushSide(row) {                       // 0 = keine Katze in dieser Reihe, sonst -1 (links) oder +1 (rechts)
+    if (row < 8 || hashRow('cat', row) % 8 !== 1) return 0;
+    return hashRow('catside', row) % 2 ? 1 : -1;
+  }
+  function nextAmbush(side, from) { for (let r = from; r < from + 48; r++) if (ambushSide(r) === side) return r; return from + 10; }
+  // x ist die MITTE der Katze in Spalteneinheiten. Rechts ist das exakte Spiegelbild von links (der Auftrag nannte COLS − 1.14,
+  // das hätte die rechten Katzen in Spalte 7 gesetzt und Spalte 8 nie erreicht).
+  const catHomeX = side => side < 0 ? .14 : COLS - .14;
+  function placeCat(c, from) {
+    c.home = nextAmbush(c.side, from); c.row = c.home; c.x = catHomeX(c.side);
+    c.phase = 'sit'; c.t = 0; c.u = 0; c.air = 0; c.pounced = false; c.pushed = false; c.timer = 1 + catRnd() * 3;
+  }
+  function initCats() {
+    catRnd = mulberry32(hashStr(runSeed + ':cats'));
+    cats = [-1, 1, -1, 1].map((side, k) => ({ side, color: CAT_COLORS[k], ph: catRnd() * 6.28 }));
+    for (const c of cats) { const mate = cats.find(o => o !== c && o.side === c.side && o.home !== undefined); placeCat(c, mate ? mate.home + 1 : 8); }
+  }
+  function startCat(c, phase, dur, tx, tr) { c.phase = phase; c.dur = dur; c.t = dur; c.fx = c.x; c.fr = c.row; c.tx = tx; c.tr = tr; }
+  function updateCats(dt) {
+    for (const c of cats) {
+      if (c.phase === 'sit' && c.home < Math.floor(camRow) - 1) {   // hinter der Kamera: weiter vorn neu setzen
+        const mate = cats.find(o => o !== c && o.side === c.side);
+        placeCat(c, Math.max(player.row + 4, mate ? mate.home + 1 : 0));
+        continue;
+      }
+      if (c.phase === 'sit') {
+        c.x = catHomeX(c.side); c.row = c.home; c.air = 0; c.u = 0;
+        // Pounce: einmal pro Ambush-Reihe, wenn du höchstens 1 Reihe entfernt bist – festes Ziel, kein Verfolgen
+        if (!c.pounced && Math.abs(player.row - c.home) <= 1) {
+          c.pounced = true; c.pushed = false;
+          startCat(c, 'pounce', .46, c.side < 0 ? .70 : COLS - .70, c.home);
+          continue;
         }
-        // nächste Stufe?
-        const st = Math.min(TRIP.maxStage, 1 + Math.floor(nr / TRIP.stageRows));
-        if (st > tripStage) {
-          tripStage = st;
-          Sound.sting('win');
-          if (!ev) {
-            document.documentElement.style.setProperty('--ev', '#ff6bd6');
-            document.getElementById('bannerTitle').textContent = 'NEON-TRIP ' + ROMAN[st - 1];
-            document.getElementById('bannerSub').textContent = 'Schneller, greller, lauter';
-            bannerEl.hidden = false; hintLeft = 1.6;
+        c.timer -= dt;
+        if (c.timer <= 0) {
+          c.timer = 2 + catRnd() * 3;
+          const mate = cats.find(o => o !== c && o.side === c.side && o.phase === 'sit' && Math.abs(o.home - c.home) <= 10);
+          if (mate && catRnd() < .6) startCat(c, 'onto', .52, mate.x, mate.home); else startCat(c, 'hop', .30, c.x, c.home);
+        }
+      } else {
+        c.t -= dt;
+        const u = 1 - Math.max(0, c.t) / c.dur;
+        c.u = u; c.x = c.fx + (c.tx - c.fx) * u; c.row = c.fr + (c.tr - c.fr) * u; c.air = Math.sin(u * Math.PI);
+        if (c.phase === 'pounce' && !c.pushed && u > .58 && u < .90 && Math.abs(c.row - player.row) < .7 && Math.abs(c.x - (player.col + .5)) < .9) {
+          const before = Math.round(player.col);
+          move(-c.side, 0);                         // von links +1, von rechts −1
+          if (Math.round(player.col) !== before) {  // nur wenn sich die Spalte wirklich geändert hat
+            c.pushed = true;
+            popup(player.col + .5, player.row + 1.2, 'MIAU!', '#ffd0ea');
+            burst(player.col + .5, player.row + .4, 8, ['#ffd0ea', '#ffffff'], 1.6, .4);
+            Sound.meow();
           }
         }
+        if (c.t <= 0) {
+          if (c.phase === 'back') { c.phase = 'sit'; c.timer = 2 + catRnd() * 3; }
+          else startCat(c, 'back', .34, catHomeX(c.side), c.home);
+        }
       }
-      updateCombo(true);
     }
+  }
+
+  // ---------- Sprung ----------
+  // Die Logikzelle (player.col/row) gilt SOFORT. Der Bogen ist reine Zeichnung (hopT 0→1): er startet an der
+  // gerade GEZEICHNETEN Position, damit auch ein Sprung mitten im Bogen nahtlos weiterläuft.
+  function shown(h = player.hopT) {
+    const e = ease(Math.min(1, Math.max(0, h)));
+    return { col: player.fromCol + (player.col - player.fromCol) * e, row: player.fromRow + (player.row - player.fromRow) * e };
+  }
+  function commitHop(nc, nr, arc) {
+    const v = shown();
+    player.fromCol = v.col; player.fromRow = v.row;
+    player.dc = Math.sign(nc - player.col); player.dr = Math.sign(nr - player.row);
+    player.col = nc; player.row = nr; player.hopT = 0; player.arc = arc; player.landed = false; hopId++;
+  }
+  // Fortschritt: nur wenn eine neue Reihe erreicht wurde (rows = wie viele Reihen auf einmal)
+  function progress(nc, nr, rows) {
+    if (getRow(nr).type === 'data') run.data++;
+    if (getRow(nr).type === 'rail' && evActive('express')) { points += 5 * mult; popup(nc + .5, nr + 1.6, 'GLEIS +' + 5 * mult, '#c86bff'); }
+    player.maxRow = nr;
+    combo++; comboTimer = COMBO_WINDOW;
+    const m = Math.min(5, 1 + Math.floor(combo / 6));
+    if (m > mult) { mult = m; Sound.combo(m); popup(nc + .5, nr + 1, '×' + m + ' COMBO', P.cyan); }
+    mult = m;
+    points += mult * rows * scoreMul();
+    if (mode === 'trip') {
+      // Beat-Sprung: genau auf den Bass gesprungen?
+      const b = Sound.beat();
+      if (Math.min(b.since, b.to) <= TRIP.beatWindow) {
+        const bonus = TRIP.beatBonus * mult * scoreMul();
+        points += bonus; run.beats = (run.beats || 0) + 1;
+        comboTimer = COMBO_WINDOW + TRIP.beatCombo;
+        popup(nc + .5, nr + 1.3, 'BEAT +' + bonus, '#7df9ff');
+        burst(nc + .5, nr + .5, 10, ['#7df9ff', '#ff6bd6', '#ffffff'], 2.2, .4);
+      }
+      // nächste Stufe?
+      const st = Math.min(TRIP.maxStage, 1 + Math.floor(nr / TRIP.stageRows));
+      if (st > tripStage) {
+        tripStage = st;
+        Sound.sting('win');
+        if (!ev) {
+          document.documentElement.style.setProperty('--ev', '#ff6bd6');
+          document.getElementById('bannerTitle').textContent = 'NEON-TRIP ' + ROMAN[st - 1];
+          document.getElementById('bannerSub').textContent = 'Schneller, greller, lauter';
+          bannerEl.hidden = false; hintLeft = 1.6;
+        }
+      }
+    }
+    updateCombo(true);
+  }
+  // Was passiert auf dem Feld, auf dem du landest
+  function landOn(nc, nr) {
     Sound.hop(combo);
     const tr = getRow(nr);
     if (tr.loot === nc) { tr.loot = -1; grabLoot(nc, nr); }
@@ -1465,7 +1637,41 @@
     } else if (!tr.safehouse) inSafehouse = false;
     score = points;
     updateHud();
+  }
+
+  // ---------- Eingabe ----------
+  function move(dc, dr) {
+    if (state !== 'play') return;                  // keine Warteschlange: Eingaben warten nie auf den Bogen
+    const nc = Math.round(player.col) + dc, nr = player.row + dr;
+    if (nc < 0 || nc >= COLS) return;
+    if (nr < Math.floor(camRow)) return;           // nicht aus dem Bild nach unten
+    if (solidAt(nc, nr)) return;                   // Gebäude und Bäume
+    nearMiss(player.row, player.col, false);        // in letzter Sekunde ausgewichen?
+    burst(player.col + .5, player.row + .2, 5, [P.cyan, P.violet], 1.2, .35);
+    commitHop(nc, nr, 1);
+    if (nr > player.maxRow) progress(nc, nr, 1);
+    landOn(nc, nr);
     if (navigator.vibrate) navigator.vibrate(8);
+  }
+  // Supersprung: 2 oder 3 Reihen auf einmal, gleiche Spalte; ist das Ziel solid, die nächste freie Spalte nach außen
+  function superLeap() {
+    if (state !== 'play' || leapCd > 0) return;
+    const rows = Math.random() < .5 ? 2 : 3, base = Math.round(player.col), nr = player.row + rows;
+    let nc = -1;
+    for (const off of [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8, -8]) {
+      const c = base + off;
+      if (c >= 0 && c < COLS && !solidAt(c, nr)) { nc = c; break; }
+    }
+    if (nc < 0) return;                            // nirgends frei: Sprung abbrechen, Cooldown startet nicht
+    leapCd = LEAP_CD;
+    nearMiss(player.row, player.col, false);
+    burst(player.col + .5, player.row + .2, 14, [P.gold, P.cyan, '#ffffff'], 2.4, .5);
+    commitHop(nc, nr, rows);
+    if (nr > player.maxRow) progress(nc, nr, rows);
+    popup(nc + .5, nr + 1.2, 'SUPER ' + rows, P.cyan);
+    Sound.leap();
+    if (navigator.vibrate) navigator.vibrate([12, 40, 12]);
+    landOn(nc, nr);
   }
 
   // Wischen löst aus, sobald der Finger 18 px gewandert ist – nicht erst beim Loslassen.
@@ -1490,6 +1696,7 @@
     const k = { ArrowUp: [0, 1], KeyW: [0, 1], ArrowDown: [0, -1], KeyS: [0, -1],
                 ArrowLeft: [-1, 0], KeyA: [-1, 0], ArrowRight: [1, 0], KeyD: [1, 0] }[e.code];
     if (state === 'intro') { introT = Math.max(introT, INTRO.close + INTRO.zoom); return; }
+    if (state === 'play' && (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight')) { e.preventDefault(); superLeap(); return; }
     if (state !== 'play') {
       if (document.getElementById('leaderboard').hidden && document.getElementById('wardrobe').hidden &&
           document.getElementById('districts').hidden && document.getElementById('archive').hidden && (k || e.code === 'Space' || e.code === 'Enter')) handleOverlayTap();
@@ -1504,6 +1711,16 @@
   muteBtn.addEventListener('click', () => { Sound.init(); Sound.toggleMute(); syncMute(); });
   window.addEventListener('keydown', e => { if (e.code === 'KeyM') { Sound.init(); Sound.toggleMute(); syncMute(); } });
   syncMute();
+  const leapBtn = document.getElementById('leapBtn');
+  ['pointerup'].forEach(ev => leapBtn.addEventListener(ev, e => e.stopPropagation()));
+  leapBtn.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); superLeap(); });
+  leapBtn.addEventListener('click', superLeap);      // Tastatur (Enter/Leertaste auf dem fokussierten Knopf)
+  let leapLabel = '';
+  function syncLeap() {                              // Knopf nur im Spiel; zeigt Super oder die Rest-Sekunden
+    const show = state === 'play', label = leapCd > 0 ? Math.ceil(leapCd) + 's' : 'Super';
+    if (leapBtn.hidden === show) leapBtn.hidden = !show;
+    if (label !== leapLabel) { leapLabel = label; leapBtn.textContent = label; leapBtn.disabled = leapCd > 0; }
+  }
 
   function handleOverlayTap(newMode) {
     if (state === 'dead' && performance.now() - deadAt < 600) return; // kein versehentlicher Neustart
@@ -1698,8 +1915,7 @@
     if (['car', 'drone', 'rail', 'laser', 'hunter'].includes(why) && pw.shield > 0) {
       pw.shield = 0; invuln = 1.2;
       if (hunter.on) hunter.row = Math.min(hunter.row, player.row - HUNTER.shake);                    // kurz unverwundbar, damit man aus dem Auto rauskommt
-      const e = ease(player.hopT);
-      const x = player.fromCol + (player.col - player.fromCol) * e + .5;
+      const x = shown().col + .5;
       burst(x, player.row + .5, 36, [P.cyan, '#ffffff', P.blue], 4, .7);
       popup(x, player.row + 1.2, 'SCHILD GEPLATZT', P.cyan);
       drones = drones.filter(d => Math.abs(d.row - player.row) > 1);   // EMP holt Drohnen in der Nähe runter
@@ -1715,15 +1931,15 @@
     endEvent(true);
     hintLeft = 0; bannerEl.hidden = true;         // Hinweis-Banner nicht über dem Game-Over stehen lassen
     combo = 0; comboEl.hidden = true;
-    const t = ease(player.hopT);
-    burst(player.fromCol + (player.col - player.fromCol) * t + .5, player.row + .5, 40, [P.magenta, P.violet, P.cyan, P.blue, '#ffffff'], 4, .9);
+    const dv = shown();
+    burst(dv.col + .5, dv.row + .5, 40, [P.magenta, P.violet, P.cyan, P.blue, '#ffffff'], 4, .9);
     shake = reduceMotion ? 0 : 0.35; glitch = reduceMotion ? 0 : 0.4;
     if (navigator.vibrate) navigator.vibrate([40, 30, 60]);
     checkMissions();
     saveLeaderboardRun();
     const prevBest = mode === 'daily' ? dailyBest : mode === 'trip' ? tripBest : best;
     if (mode === 'daily') { if (score > dailyBest) { dailyBest = score; try { localStorage.setItem('nh-daily-' + dayKey, dailyBest); } catch (e) {} } }
-    else if (mode === 'trip') { if (score > tripBest) { tripBest = score; try { localStorage.setItem('nh-best-trip', tripBest); } catch (e) {} } }
+    else if (mode === 'trip') { if (score > tripBest) { tripBest = score; try { localStorage.setItem('nh-trip-best', tripBest); } catch (e) {} } }
     else if (score > best) { best = score; try { localStorage.setItem('nh-best', best); } catch (e) {} }
     // Fortschritt von Sammel-Missionen über Runs hinweg mitnehmen
     for (const a of ms.active) { const M = mdef(a.id); if (M.total && !a.done) a.prog += M.val(run) || 0; }
@@ -1907,25 +2123,28 @@
     popups = popups.filter(p => p.life > 0);
     if (state !== 'play') return;
 
-    if (player.hopT < 1) {
-      player.hopT = Math.min(1, player.hopT + dt * 1000 / HOP_MS);
-      if (player.hopT >= .5 && player.queued) { const q = player.queued; player.queued = null; move(q[0], q[1]); }
+    // Bogen-Fortschritt (nur Zeichnung). Über 1 hinaus: kurzes Ausfedern der Landung.
+    if (player.hopT < 1.35) player.hopT = Math.min(1.35, player.hopT + dt * 1000 / (player.hopT < 1 ? HOP_MS : HOP_MS * 2.2));
+    if (player.hopT >= 1 && !player.landed) {
+      player.landed = true;
+      burst(player.col + .5, player.row + .1, 6, [P.cyan, P.violet], 1.1, .3);
     }
+    leapCd = Math.max(0, leapCd - dt);
+    updateCats(dt);
 
-    // Datenkanal: ab 60 % des Sprungs muss eine Plattform drunter sein, dann fährst du mit
+    // Datenkanal: Es muss sofort eine Plattform unter dir sein, dann fährst du mit
     const dr = getRow(player.row);
-    if (dr.type === 'data' && player.hopT >= .6) {
+    if (dr.type === 'data') {
+      const drift = dr.dir * dr.speed * slowF * dt;
+      player.col += drift; player.fromCol += drift;
       if (!onPlatform(player.row, player.col)) return die('data');
-      if (player.hopT >= 1) {
-        player.col += dr.dir * dr.speed * slowF * dt; player.fromCol = player.col;
-        if (player.col < -.35 || player.col > COLS - .65) return die('data');
-      }
+      if (player.col < -.35 || player.col > COLS - .65) return die('data');
     }
     // Magnetbahn und Laser-Gitter
     {
       const hit = hitPos(), cr = getRow(hit.row);
       if (cr.type === 'rail' && cr.phase === 'pass' && cr.tx < hit.px + 1 - HIT_PAD && cr.tx + cr.len > hit.px + HIT_PAD) return die('rail');
-      if (cr.laser && player.hopT >= .5 && laserState(cr.laser) === 'on' && !cr.laser.gaps.includes(Math.round(player.col))) return die('laser');
+      if (cr.laser && laserState(cr.laser) === 'on' && !cr.laser.gaps.includes(Math.round(player.col))) return die('laser');
     }
     // Im Safehouse steigen kühle Funken auf, solange Heat abkühlt
     if (dr.safehouse && heat > 0 && Math.random() < dt * 14)
@@ -1950,21 +2169,280 @@
       }
     }
     const target = player.row - Math.floor(H / cell) * 0.32;
-    if (target > camRow) camRow += (target - camRow) * Math.min(1, dt * 6);
+    if (target > camRow) camRow += (target - camRow) * Math.min(1, dt * CAM_LAG);
   }
   const ease = t => 1 - (1 - t) * (1 - t);
-  // Wo du für Treffer gerade bist: bis zur Hälfte eines Sprungs zählt noch das alte Feld –
-  // so erwischt dich kein Auto in der Zielreihe, bevor du dort optisch angekommen bist.
-  function hitPos() {
-    const t = ease(player.hopT);
-    return { row: player.hopT < .5 ? player.fromRow : player.row, px: player.fromCol + (player.col - player.fromCol) * t };
-  }
+  // Treffer prüfen immer die Logikzelle, nie die gezeichnete Position
+  function hitPos() { return { row: player.row, px: player.col }; }
 
   // ---------- Zeichnen ----------
   function rowY(i) { return H - (i - camRow + 1) * cell; }
   function blit(s, x, y) { ctx.drawImage(s.c, x - s.pad, y - s.pad, s.w, s.h); }
 
   // Intro-Nahaufnahme: große Figur, Sonnenbrille rutscht auf die Augen, dann schrumpft alles auf die Spielfigur
+  // ---------- Stadt zeichnen (alles ohne shadowBlur) ----------
+  // Fassade: fast schwarzes Haus, Neonkante oben und unten, 3×2 pulsierende Fenster
+  function drawFacade(x, y, col, t, hue) {
+    ctx.fillStyle = '#04010a'; ctx.fillRect(x + 1, y + 1, cell - 2, cell - 2);
+    ctx.fillStyle = hue; ctx.globalAlpha = .85;
+    ctx.fillRect(x + 1, y + 1, cell - 2, 2); ctx.fillRect(x + 1, y + cell - 3, cell - 2, 2);
+    const ww = cell * .17, wh = cell * .2;
+    for (let wy = 0; wy < 2; wy++) for (let wx = 0; wx < 3; wx++) {
+      ctx.globalAlpha = .25 + .45 * (.5 + .5 * Math.sin(t * 2.2 + col + wx * 1.7 + wy * 2.9));
+      ctx.fillStyle = (wx + wy) % 2 ? P.cyan : hue;
+      ctx.fillRect(x + cell * .14 + wx * cell * .26, y + cell * .2 + wy * cell * .34, ww, wh);
+    }
+    ctx.globalAlpha = 1;
+  }
+  function drawTree(x, y, t, seed) {
+    const cx = x + cell / 2 + Math.sin(t * 1.2 + seed) * cell * .015;
+    ctx.fillStyle = 'rgba(0, 0, 0, .4)'; ctx.beginPath(); ctx.ellipse(x + cell / 2, y + cell * .8, cell * .34, cell * .1, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#0b3319'; ctx.beginPath(); ctx.arc(cx, y + cell * .45, cell * .36, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#17692f'; ctx.beginPath(); ctx.arc(cx - cell * .08, y + cell * .38, cell * .22, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(120, 255, 160, .35)'; ctx.beginPath(); ctx.arc(cx - cell * .13, y + cell * .31, cell * .08, 0, Math.PI * 2); ctx.fill();
+  }
+  // Alle Reihen, die keine Straße, kein Kanal, keine Bahn und kein Safehouse sind
+  function drawSafeRow(r, i, y, t) {
+    const k = r.kind;
+    if (k === 'park') {
+      ctx.fillStyle = '#07160e'; ctx.fillRect(0, y, W, cell + 1);
+      for (let c = 0; c < COLS; c++) {
+        const x = c * cell;
+        if (r.blocks.includes(c)) { drawTree(x, y, t, i * 3 + c); continue; }
+        ctx.fillStyle = 'rgba(60, 170, 90, .10)'; ctx.fillRect(x + 2, y + 2, cell - 4, cell - 4);     // Grasfläche
+        ctx.fillStyle = 'rgba(120, 255, 160, .22)';
+        for (let q = 0; q < 3; q++) ctx.fillRect(x + cell * (.2 + ((i * 7 + c * 5 + q * 3) % 6) * .11), y + cell * (.3 + q * .22), 1.5, cell * .1);   // Halme
+      }
+    } else if (k === 'river') {
+      ctx.fillStyle = '#031820'; ctx.fillRect(0, y, W, cell + 1);
+      ctx.fillStyle = P.cyan; ctx.globalAlpha = .35;
+      for (let q = 0; q < 10; q++) {                                        // Strömungsstriche, bewegen sich
+        const span = COLS + 2, xx = (((t * .9 + q * 1.37 + i * .6) % span) + span) % span - 1;
+        ctx.fillRect(xx * cell, y + cell * (.12 + (q * .21) % .76), cell * (.5 + (q % 3) * .3), 1.5);
+      }
+      ctx.globalAlpha = .5;
+      if (r.cfirst) ctx.fillRect(0, y, W, 1.5);
+      if (r.clast) ctx.fillRect(0, y + cell - 1.5, W, 1.5);
+      ctx.globalAlpha = 1;
+    } else if (k === 'cross') {
+      ctx.fillStyle = P.asphalt; ctx.fillRect(0, y, W, cell + 1);
+      ctx.fillStyle = 'rgba(225, 235, 250, .5)';                            // fünf helle Querstreifen über die ganze Breite
+      for (let q = 0; q < 5; q++) ctx.fillRect(0, y + cell * (.1 + q * .18), W, cell * .09);
+    } else {                                                                // Gasse, Spawn, Platz
+      ctx.fillStyle = P.alley; ctx.fillRect(0, y, W, cell + 1);
+      ctx.fillStyle = 'rgba(166, 77, 255, .12)';                            // Gehwegplatten auf freien Spalten
+      for (let c = 0; c < COLS; c++) if (!r.blocks.includes(c)) ctx.fillRect(c * cell + 1, y + 1, cell - 2, cell - 2);
+      for (const c of r.blocks) drawFacade(c * cell, y, c, t, r.hue || P.cyan);
+      if (k === 'platz') {                                                  // cyaner Rahmen um den Platz
+        ctx.fillStyle = P.cyan; ctx.globalAlpha = .55;
+        if (r.cfirst) ctx.fillRect(0, y, W, 2);
+        if (r.clast) ctx.fillRect(0, y + cell - 2, W, 2);
+        ctx.globalAlpha = 1;
+      }
+      for (const d of r.decor) {                                            // Neon-Schilder (flackern)
+        const flick = Math.sin(t * 3 + d.ph) > -.85 || Math.random() < .3;
+        if (!flick) continue;
+        ctx.globalAlpha = .55;
+        blit(signSprite(d.color, d.len), d.x * cell, y + (d.top ? cell * .12 : cell * .8));
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+  // Straßennamen: nur auf der ersten Reihe eines Blocks
+  function drawNames(lo, hi) {
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+    ctx.font = `700 ${Math.round(cell * .2)}px Orbitron, sans-serif`;
+    ctx.globalAlpha = .72;
+    for (let i = lo; i <= hi; i++) {
+      const r = getRow(i);
+      if (!r.cname || r.cidx !== 0) continue;
+      ctx.fillStyle = r.hue || P.cyan;
+      ctx.fillText(r.cname, r.kind === 'avenue' || r.kind === 'canal' ? cell * .12 : cell * 1.05, rowY(i) + cell * .5);
+    }
+    ctx.globalAlpha = 1; ctx.textBaseline = 'alphabetic';
+  }
+  // Bau-Animation: verdeckt nur die ZEICHNUNG ab player.row + 2. Deine Reihe und die nächste sind immer fertig.
+  function rowRevealed(i, now) {
+    if (state !== 'play' || i <= player.row + 1) return true;
+    const st = revealAt.get(i);
+    return st !== undefined && now - st - 4 * BUILD.cellDelay >= BUILD.cellTime;
+  }
+  function drawReveal(lo, hi, now) {
+    if (state !== 'play') return;                  // im Menü ist alles sichtbar
+    for (let i = lo; i <= hi; i++) {
+      if (i <= player.row + 1) continue;
+      let st = revealAt.get(i);
+      if (st === undefined) { st = now + Math.max(0, i - player.row - 2) * BUILD.rowDelay; revealAt.set(i, st); }
+      const y = rowY(i);
+      for (let c = 0; c < COLS; c++) {
+        const u = Math.min(1, Math.max(0, (now - st - Math.abs(c - (COLS - 1) / 2) * BUILD.cellDelay) / BUILD.cellTime));   // Mitte zuerst
+        if (u >= 1) continue;
+        const x = c * cell, cover = cell * (1 - u);     // verdeckt bleibt der obere Teil, die Scan-Linie wandert nach oben
+        ctx.fillStyle = '#05010e'; ctx.fillRect(x, y, cell + 1, cover + 1);
+        ctx.strokeStyle = u > 0 ? 'rgba(5, 217, 232, .5)' : 'rgba(5, 217, 232, .18)'; ctx.lineWidth = 1;   // Gerüst
+        ctx.strokeRect(x + 4, y + 4, cell - 8, Math.max(0, cover - 8));
+        if (u > 0) { ctx.fillStyle = P.cyan; ctx.fillRect(x, y + cover - 1, cell, 2); }
+        ctx.fillStyle = 'rgba(166, 77, 255, .7)'; ctx.fillRect(x, y, 3, cover); ctx.fillRect(x + cell - 3, y, 3, cover);   // violette Kanten
+      }
+    }
+  }
+  // Niedriger Horizont: Nebel oben, ein paar Laternen, ferne Lichtstriche – keine Gebäude über dem Spielfeld
+  function drawCityAtmosphere(t) {
+    const fogH = H * .38, fa = .5 * (1 - .85 * blackoutK);
+    const g = ctx.createLinearGradient(0, 0, 0, fogH);
+    g.addColorStop(0, `rgba(30, 14, 56, ${fa})`); g.addColorStop(1, 'rgba(30, 14, 56, 0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, fogH);
+    ctx.globalCompositeOperation = 'lighter';
+    for (let k = 0; k < 7; k++) {                  // 7 niedrige Laternen, scrollen langsam mit der Kamera
+      const x = k % 2 ? W * .035 : W * .965, col = k % 2 ? P.cyan : P.magenta;
+      const y = (((k * fogH / 7 + camRow * cell * .12) % fogH) + fogH) % fogH + cell * .5;
+      ctx.fillStyle = col;
+      ctx.globalAlpha = .45; ctx.fillRect(x - 1, y - cell * .4, 2, cell * .4);     // Mast
+      ctx.globalAlpha = .9; ctx.fillRect(x - 3, y - cell * .45, 6, 3);             // Kopf
+      ctx.globalAlpha = .06; ctx.beginPath(); ctx.arc(x, y - cell * .43, cell * .9, 0, Math.PI * 2); ctx.fill();   // sehr schwacher Lichtkreis
+    }
+    for (let k = 0; k < 3; k++) {                  // ferne Lichtstriche (Luftverkehr)
+      const x = (((t * (28 + k * 14) + k * W * .37) % (W + 140)) + W + 140) % (W + 140) - 70;
+      ctx.globalAlpha = .28; ctx.fillStyle = ['#7df9ff', '#ff6bd6', '#ffffff'][k];
+      ctx.fillRect(x, H * (.07 + k * .06), 40 + k * 20, 2);
+    }
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  }
+  // Katze: Körper, Kopf, Ohren, blinzelnde Augen, wedelnder Schweif
+  function drawCat(c, t) {
+    const sz = cell * .26, f = c.side < 0 ? 1 : -1;       // sitzt links → schaut nach rechts, zur Straße
+    const cx = c.x * cell, cy = rowY(c.row) + cell * .66 - c.air * cell * .3;
+    ctx.save(); ctx.translate(cx, cy);
+    ctx.fillStyle = 'rgba(0, 0, 0, .35)'; ctx.beginPath(); ctx.ellipse(0, sz * .45 + c.air * cell * .3, sz * .5, sz * .13, 0, 0, Math.PI * 2); ctx.fill();
+    if (c.phase === 'pounce') ctx.rotate(f * .55 * Math.sin(c.u * Math.PI));
+    ctx.strokeStyle = c.color; ctx.lineWidth = sz * .17; ctx.lineCap = 'round';
+    const wag = Math.sin(t * 5 + c.ph) * sz * .3;                                  // Schweif wedelt
+    ctx.beginPath(); ctx.moveTo(-f * sz * .4, sz * .12); ctx.quadraticCurveTo(-f * sz * .8, -sz * .1 + wag, -f * sz * .55, -sz * .55 + wag); ctx.stroke();
+    ctx.fillStyle = c.color;
+    ctx.beginPath(); ctx.ellipse(0, sz * .12, sz * .5, sz * .3, 0, 0, Math.PI * 2); ctx.fill();   // Körper
+    ctx.beginPath(); ctx.arc(f * sz * .42, -sz * .14, sz * .27, 0, Math.PI * 2); ctx.fill();         // Kopf
+    for (const o of [-.14, .16]) {                                                                 // Ohren
+      const ex = f * sz * (.42 + o);
+      ctx.beginPath(); ctx.moveTo(ex - sz * .09, -sz * .3); ctx.lineTo(ex, -sz * .56); ctx.lineTo(ex + sz * .09, -sz * .3); ctx.fill();
+    }
+    const blink = (t * .7 + c.ph) % 4 < .12;                                                       // blinzelt ab und zu
+    ctx.fillStyle = '#1a0b33';
+    if (blink) ctx.fillRect(f * sz * .5 - sz * .1, -sz * .17, sz * .2, 1.2);
+    else { ctx.beginPath(); ctx.arc(f * sz * .5, -sz * .16, sz * .045, 0, Math.PI * 2); ctx.arc(f * sz * .34, -sz * .16, sz * .045, 0, Math.PI * 2); ctx.fill(); }
+    ctx.restore();
+    // goldenes „!“: zwei Reihen vorher und während des Sprungs
+    const near = c.phase === 'sit' && !c.pounced && c.home - player.row <= 2 && c.home - player.row >= -1;
+    if (near || c.phase === 'pounce') {
+      ctx.fillStyle = P.gold; ctx.font = `900 ${Math.round(cell * .3)}px Orbitron, sans-serif`; ctx.textAlign = 'center';
+      ctx.fillText('!', cx + f * sz * .3, cy - sz * 1.15);
+    }
+  }
+  // Figur-Pose: reine Zeichnung. air = Luftanteil, takeoff/landing = Stauchung, lean = Neigung in Sprungrichtung
+  function poseAt(h) {
+    const hh = Math.min(1, Math.max(0, h)), v = shown(hh), air = Math.sin(hh * Math.PI), arc = player.arc || 1;
+    const takeoff = hh < .18 ? 1 - hh / .18 : 0;
+    let landing = hh > .8 ? (hh - .8) / .2 : 0;
+    if (h > 1) landing *= Math.max(0, 1 - (h - 1) / .35);                    // nach der Landung wieder ausfedern
+    const squash = takeoff * .28 + landing * .22;
+    return { col: v.col, row: v.row, air, lift: air * cell * .55 * arc, sx: 1 + squash - air * .14, sy: 1 - squash + air * .26,
+             lean: (player.dc * .40 - player.dr * .18) * (.30 + air) };
+  }
+  function drawFigure(t, b) {
+    if (state === 'dead' && performance.now() - deadAt >= 120) return;
+    const ps = playerSprite(state === 'dead'), s = Math.round(cell * .6), p0 = poseAt(player.hopT);
+    const fx = p0.col * cell + cell / 2, fy = rowY(p0.row) + cell * .84;       // Fußpunkt
+    const sprite1 = (pose, alpha) => {
+      ctx.save(); ctx.globalAlpha = alpha;
+      ctx.translate(pose.col * cell + cell / 2, rowY(pose.row) + cell * .84 - pose.lift);
+      ctx.rotate(pose.lean); ctx.scale(pose.sx, pose.sy);
+      ctx.drawImage(ps.c, -ps.w / 2, -(ps.h - ps.pad), ps.w, ps.h);
+      ctx.restore();
+    };
+    // Schatten wird in der Luft kleiner
+    ctx.fillStyle = 'rgba(0, 0, 0, .45)';
+    ctx.beginPath(); ctx.ellipse(fx, fy, s * .42 * (1 - p0.air * .45), s * .12 * (1 - p0.air * .45), 0, 0, Math.PI * 2); ctx.fill();
+    if (p0.air > .12) {                                                          // cyaner Ring am Boden
+      const hh = Math.min(1, player.hopT), rad = cell * (.18 + .5 * hh);
+      ctx.strokeStyle = '#7df9ff'; ctx.lineWidth = 1.5; ctx.globalAlpha = .55 * (1 - hh);
+      ctx.beginPath(); ctx.ellipse(fx, fy, rad, rad * .35, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+    }
+    if (p0.air > .2 && !reduceMotion) {                                          // zwei Nachbilder
+      for (const k of [.12, .24]) if (player.hopT - k > 0) sprite1(poseAt(player.hopT - k), .15);
+    }
+    const blink = invuln > 0 && Math.floor(t * 16) % 2;
+    sprite1(p0, pw.ghost > 0 ? .4 : blink ? .35 : 1);
+    ctx.globalAlpha = 1;
+    const cyp = fy - p0.lift - s * .5;                                           // Schild und Magnet hängen an der Brust
+    if (mode === 'trip' && state === 'play') {                                   // Beat-Ring: schrumpft auf dich zu
+      const r0 = cell * (.48 + 1.3 * Math.max(0, Math.min(1, b.to / b.period)));
+      ctx.strokeStyle = '#7df9ff'; ctx.lineWidth = 2; ctx.globalAlpha = .35 + .5 * (1 - Math.max(0, Math.min(1, b.to / b.period)));
+      ctx.beginPath(); ctx.arc(fx, cyp, r0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+    }
+    if (pw.shield > 0) {
+      ctx.strokeStyle = P.cyan; ctx.lineWidth = 2; ctx.globalAlpha = .55 + .25 * Math.sin(t * 6);
+      ctx.beginPath(); ctx.arc(fx, cyp, cell * .48, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+    }
+    if (pw.magnet > 0) {
+      ctx.strokeStyle = P.magenta; ctx.lineWidth = 1.5; ctx.globalAlpha = .35;
+      ctx.setLineDash([4, 6]); ctx.lineDashOffset = -t * 20;
+      ctx.beginPath(); ctx.arc(fx, cyp, cell * 1.45, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+    }
+  }
+  // Trip-Optik: Nachbilder in 14-px-Streifen mit Farbdrift, Tunnelringe, Bézier-Gitter. Nur Optik, kein Filter auf dem scharfen Bild.
+  function tripOptics(t) {
+    const cw = canvas.width, ch = canvas.height, hw = world.width, hh = world.height, k = hw / cw;   // k = 0,5: halbe Auflösung
+    if (!tripFresh) {
+      // 1) das vorige Bild in 14-px-Streifen mit wellenförmigem Versatz auf die Hilfsleinwand legen (ohne Filter)
+      gctx.setTransform(1, 0, 0, 1, 0, 0); gctx.clearRect(0, 0, hw, hh);
+      const sh = Math.max(2, Math.round(14 * dpr * k));
+      for (let y = 0; y < hh; y += sh) {
+        const off = Math.sin(t * 1.6 + y / (dpr * k) * .04) * (7 + 4 * Math.sin(t * .8)) * dpr * k;
+        gctx.drawImage(world, 0, y, hw, sh, off, y, hw, sh);
+      }
+      // 2) in einem Zug mit Farbdrift färben (ein Filterdurchlauf, klein) – ohne ctx.filter entsteht die Drift beim Merken (unten)
+      let src = ghost;
+      if (HAS_FILTER) {
+        g2ctx.setTransform(1, 0, 0, 1, 0, 0); g2ctx.clearRect(0, 0, hw, hh);
+        g2ctx.filter = `hue-rotate(${Math.round((t * 48) % 360)}deg) saturate(1.65)`;
+        g2ctx.drawImage(ghost, 0, 0); g2ctx.filter = 'none';
+        src = ghost2;
+      }
+      // 3) hochskaliert (weich) mit Alpha 0,32 über das scharfe Bild
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = .32; ctx.drawImage(src, 0, 0, hw, hh, 0, 0, cw, ch);
+      ctx.restore();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.lineWidth = 2.5;
+      for (let q = 0; q < 5; q++) {                // 5 Tunnelringe
+        const ph = (t * .28 + q / 5) % 1, rad = ph * Math.hypot(W, H) * .55;
+        ctx.globalAlpha = .13 * (1 - ph * .6); ctx.strokeStyle = q % 2 ? '#ff6bd6' : '#7df9ff';
+        ctx.beginPath(); ctx.ellipse(W / 2, H * .42, rad, rad * .62, 0, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.globalAlpha = .08; ctx.strokeStyle = '#d9f6ff'; ctx.lineWidth = 1;
+      for (let q = -4; q <= 4; q++) {              // Bézier-Gitter
+        const x0 = W / 2 + q * W * .14;
+        ctx.beginPath(); ctx.moveTo(x0, 0);
+        ctx.bezierCurveTo(x0 + Math.sin(t * .9 + q) * W * .12, H * .35, W / 2 + q * W * .05 + Math.cos(t * .7 + q) * W * .1, H * .7, W / 2 + q * W * .03, H);
+        ctx.stroke();
+      }
+      for (let q = 0; q < 6; q++) {
+        const y0 = H * (.1 + q * .16), w = Math.sin(t * 1.1 + q) * H * .04;
+        ctx.beginPath(); ctx.moveTo(0, y0); ctx.bezierCurveTo(W * .33, y0 + w, W * .66, y0 - w, W, y0); ctx.stroke();
+      }
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    }
+    // aktuelles Bild (verkleinert) für das nächste Frame merken – Geister klingen ab statt einzubrennen
+    wctx.setTransform(1, 0, 0, 1, 0, 0); wctx.globalCompositeOperation = 'source-over';
+    wctx.clearRect(0, 0, hw, hh); wctx.drawImage(canvas, 0, 0, cw, ch, 0, 0, hw, hh);
+    if (!HAS_FILTER) {
+      wctx.globalCompositeOperation = 'source-atop';
+      wctx.fillStyle = `hsla(${Math.round((t * 48) % 360)}, 90%, 55%, .2)`; wctx.fillRect(0, 0, hw, hh);
+      wctx.globalCompositeOperation = 'source-over';
+    }
+    tripFresh = false;
+  }
+
   function drawIntro(t) {
     const O = outfitFor(selectedOutfit), T = introT;
     const easeOut = x => 1 - Math.pow(1 - x, 3);
@@ -2111,6 +2589,7 @@
       }
       if (r.type === 'road') {
         ctx.fillStyle = P.asphalt; ctx.fillRect(0, y, W, cell + 1);
+        if (i % 2) { ctx.fillStyle = 'rgba(255, 255, 255, .025)'; ctx.fillRect(0, y, W, cell + 1); }   // jede zweite Reihe minimal heller
         // Neon-Bordsteine an den Rändern eines Highway-Blocks
         // (Glow ohne shadowBlur: breiter, schwacher Streifen + dünne helle Linie)
         if (getRow(i + 1).type !== 'road') {
@@ -2125,20 +2604,7 @@
         ctx.fillStyle = 'rgba(5, 217, 232, .22)';
         const dash = (t * r.speed * r.dir * .25 % 1 + 1) % 1;
         for (let x = -1; x <= COLS; x++) ctx.fillRect((x + dash) * cell + cell * .3, y + cell - 1.5, cell * .4, 1.5);
-      } else {
-        ctx.fillStyle = P.alley; ctx.fillRect(0, y, W, cell + 1);
-        // Gehwegplatten
-        ctx.fillStyle = 'rgba(166, 77, 255, .12)';
-        for (let x = 0; x < COLS; x++) ctx.fillRect(x * cell + 1, y + 1, cell - 2, cell - 2);
-        // Neon-Schilder (flackern)
-        for (const d of r.decor) {
-          const flick = Math.sin(t * 3 + d.ph) > -.85 || Math.random() < .3;
-          if (!flick) continue;
-          ctx.globalAlpha = .55;
-          blit(signSprite(d.color, d.len), d.x * cell, y + (d.top ? cell * .12 : cell * .8));
-          ctx.globalAlpha = 1;
-        }
-      }
+      } else drawSafeRow(r, i, y, t);
     }
     // Power-ups: Sechseck mit Symbol
     for (let i = lo; i <= hi; i++) {
@@ -2173,14 +2639,6 @@
       ctx.fillRect(0, rowY(d.row), W, cell);
       ctx.globalAlpha = 1;
     }
-    // Trip-Lichtschweife: alte Bilder verblassen, dann auf die Stadt legen
-    const trails = tripFx();
-    if (trails) {
-      tctx.globalCompositeOperation = 'destination-out'; tctx.fillStyle = 'rgba(0, 0, 0, .28)'; tctx.fillRect(0, 0, W, H);
-      tctx.globalCompositeOperation = 'source-over';
-      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .55;
-      ctx.drawImage(trail, 0, 0); ctx.restore();
-    }
     // Fahrzeuge (Hover-Taxis bzw. Geldtransporter)
     for (let i = lo; i <= hi; i++) {
       const r = getRow(i);
@@ -2192,42 +2650,18 @@
           const x = (c.x - 4 + off) * cell;
           if (x > W + cell || x + c.w * cell < -cell) continue;
           blit(s, x + 2, y + cell * .19 + bob);
-          if (trails) tctx.drawImage(s.c, x + 2 - s.pad, y + cell * .19 + bob - s.pad, s.w, s.h);
         }
       }
     }
-    // Spielfigur
-    const e = ease(player.hopT);
-    const px = (player.fromCol + (player.col - player.fromCol) * e) * cell;
-    const py = rowY(player.fromRow + (player.row - player.fromRow) * e);
-    const lift = Math.sin(player.hopT * Math.PI) * cell * .2;
-    const ps = playerSprite(state === 'dead');
-    const s = Math.round(cell * .6);
-    if (state !== 'dead' || performance.now() - deadAt < 120) {
-      ctx.fillStyle = 'rgba(0,0,0,.45)';
-      ctx.beginPath(); ctx.ellipse(px + cell / 2, py + cell * .82, s * .42, s * .12, 0, 0, Math.PI * 2); ctx.fill();
-      const blink = invuln > 0 && Math.floor(t * 16) % 2;
-      ctx.globalAlpha = pw.ghost > 0 ? .4 : blink ? .35 : 1;
-      blit(ps, px + (cell - s) / 2, py + (cell - s) / 2 - lift);
-      ctx.globalAlpha = 1;
-      const cxp = px + cell / 2, cyp = py + cell / 2 - lift;
-      if (trails) tctx.drawImage(ps.c, px + (cell - s) / 2 - ps.pad, py + (cell - s) / 2 - lift - ps.pad, ps.w, ps.h);
-      if (mode === 'trip' && state === 'play') {     // Beat-Ring: schrumpft auf dich zu – trifft er dich, ist der Bass da
-        const r0 = cell * (.48 + 1.3 * Math.min(1, b.to / b.period));
-        ctx.strokeStyle = '#7df9ff'; ctx.lineWidth = 2; ctx.globalAlpha = .35 + .5 * (1 - Math.min(1, b.to / b.period));
-        ctx.beginPath(); ctx.arc(cxp, cyp, r0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
-      }
-      if (pw.shield > 0) {                           // Schild-Ring
-        ctx.strokeStyle = P.cyan; ctx.lineWidth = 2; ctx.globalAlpha = .55 + .25 * Math.sin(t * 6);
-        ctx.beginPath(); ctx.arc(cxp, cyp, cell * .48, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
-      }
-      if (pw.magnet > 0) {                           // Magnetfeld
-        ctx.strokeStyle = P.magenta; ctx.lineWidth = 1.5; ctx.globalAlpha = .35;
-        ctx.setLineDash([4, 6]); ctx.lineDashOffset = -t * 20;
-        ctx.beginPath(); ctx.arc(cxp, cyp, cell * 1.45, 0, Math.PI * 2); ctx.stroke();
-        ctx.setLineDash([]); ctx.globalAlpha = 1;
-      }
+    drawNames(lo, hi);
+    drawReveal(lo, hi, now);                       // Bau-Overlay: nach Straßen, Autos und Namen, vor Horizont, Katzen und Figur
+    drawCityAtmosphere(t);
+    for (const c of cats) {                        // Katzen am Rand (nur wo die Reihe schon gebaut ist)
+      const ry = rowY(c.row);
+      if (ry > H + cell || ry < -cell * 2 || !rowRevealed(Math.round(c.row), now)) continue;
+      drawCat(c, t);
     }
+    drawFigure(t, b);
     // Stadt-Dunst: pink von oben, blau von unten, violett an den Seiten
     // (Stadt-Dunst liegt als CSS-Ebene #haze über dem Canvas – kostet so keine Rechenzeit pro Frame)
     ctx.globalCompositeOperation = 'lighter';
@@ -2247,9 +2681,9 @@
     // Blackout: alles dunkel bis auf einen Lichtkreis um dich und die Fahrzeuglichter
     if (blackoutK > .01) {
       ctx.globalCompositeOperation = 'source-over';
-      const e2 = ease(player.hopT);
-      const cx = (player.fromCol + (player.col - player.fromCol) * e2 + .5) * cell;
-      const cy = rowY(player.fromRow + (player.row - player.fromRow) * e2) + cell / 2;
+      const dv2 = shown();
+      const cx = (dv2.col + .5) * cell;
+      const cy = rowY(dv2.row) + cell / 2;
       const g = ctx.createRadialGradient(cx, cy, cell * .8, cx, cy, cell * 2.6);
       g.addColorStop(0, 'rgba(2, 0, 8, 0)');
       g.addColorStop(1, `rgba(2, 0, 8, ${.94 * blackoutK})`);
@@ -2371,27 +2805,17 @@
     }
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'lighter';
-    // Trip: Warp-Streifen rasen aus der Mitte nach außen, Neon blitzt sanft im Takt
-    if (tripFx()) {
-      if (!warp.length) warp = Array.from({ length: 46 }, () => ({ a: Math.random() * Math.PI * 2, d: Math.random(), sp: .25 + Math.random() * .5 }));
-      const cx0 = W / 2, cy0 = H * .38, maxR = Math.hypot(W, H) * .6;
-      ctx.strokeStyle = '#d9f6ff'; ctx.lineWidth = 1.5; ctx.globalAlpha = .16 + .14 * beatPulse;
-      ctx.beginPath();
-      for (const w of warp) {
-        const r1 = w.d * w.d * maxR, r2 = r1 + 8 + w.d * 40;
-        ctx.moveTo(cx0 + Math.cos(w.a) * r1, cy0 + Math.sin(w.a) * r1); ctx.lineTo(cx0 + Math.cos(w.a) * r2, cy0 + Math.sin(w.a) * r2);
-      }
-      ctx.stroke();
-      ctx.fillStyle = P.magenta; ctx.globalAlpha = .05 * beatPulse; ctx.fillRect(-20, -20, W + 40, H + 40);   // sanfter Takt-Schimmer, kein harter Blitz
-      ctx.globalAlpha = 1;
-    }
     // Regen
     ctx.globalAlpha = .22; ctx.strokeStyle = P.violet; ctx.lineWidth = 1;
     ctx.beginPath();
     for (const d of rain) { const x = d.x * W, y = d.y * H; ctx.moveTo(x, y); ctx.lineTo(x - d.len * H * .12, y + d.len * H); }
     ctx.stroke();
+    ctx.fillStyle = P.cyan; ctx.globalAlpha = .28;                           // kleine Cyan-Aufschläge unten
+    for (const d of rain) if (d.y > .88 && d.y < 1.04) { ctx.beginPath(); ctx.ellipse(d.x * W, d.y * H, 3 + (d.y - .88) * 30, 1.2, 0, 0, Math.PI * 2); ctx.fill(); }
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
     ctx.restore();
+    ctx.fillStyle = vignette; ctx.fillRect(0, 0, W, H);                      // Vignette: Mitte klar, Rand dunkler
+    if (mode === 'trip' && state !== 'menu') { if (fxLow || fxAuto) tripFresh = true; else tripOptics(t); }
     if (state === 'intro') drawIntro(now / 1000);
 
     // Glitch beim Tod: horizontale Streifen verschieben
@@ -2408,20 +2832,25 @@
     }
   }
 
+  let frameErrors = 0;
   function frame(now) {
-    const dt = Math.min(0.05, (now - (lastT || now)) / 1000);
-    lastT = now;
-    const ts = slow > 0 ? .4 : 1;                  // kurze Zeitlupe nach einem Near-Miss
-    slow = Math.max(0, slow - dt);
-    update(dt * ts);
-    // Trip: Warp bewegen, Farben wandern durchs Spektrum (macht der Grafikchip per CSS-Filter)
-    if (tripFx()) {
-      for (const w of warp) { w.d += w.sp * dt * (1 + tripStage * .25); if (w.d > 1) { w.d = .02; w.a = Math.random() * Math.PI * 2; } }
-      hue = (hue + dt * (18 + tripStage * 7)) % 360;
-      canvas.style.filter = `hue-rotate(${hue | 0}deg) saturate(1.35)`;
-    } else if (canvas.style.filter) canvas.style.filter = '';
-    draw(now);
-    requestAnimationFrame(frame);
+    requestAnimationFrame(frame);                  // zuerst neu anfordern: ein Fehler in einem Bild darf das Spiel nie einfrieren lassen
+    try {
+      const dt = Math.min(0.05, (now - (lastT || now)) / 1000);
+      lastT = now;
+      const ts = slow > 0 ? .4 : 1;                // kurze Zeitlupe nach einem Near-Miss
+      slow = Math.max(0, slow - dt);
+      update(dt * ts);
+      if (mode === 'trip' && !fxLow && !fxAuto && state === 'play') {
+        avgDt += (dt - avgDt) * .05; slowT = avgDt > 1 / 35 ? slowT + dt : 0;
+        if (slowT > 4) { fxAuto = true; popup(player.col + .5, player.row + 1.6, 'EFFEKTE REDUZIERT', '#8c7fb0'); }
+      }
+      syncLeap();
+      draw(now);
+    } catch (e) {
+      if (frameErrors++ < 3) console.error('Bildfehler:', e);
+      resize();                                    // Zeichenzustand komplett zurücksetzen (save/restore könnte aus dem Tritt sein)
+    }
   }
 
   state = 'menu';
